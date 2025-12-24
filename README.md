@@ -1,59 +1,99 @@
-# Angular21
+# 🤖 AI Accessibility Auditor
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.4.
+> **An intelligent auditing tool designed to detect and automatically fix Web Accessibility (WCAG) issues in HTML and Angular applications.**
 
-## Development server
+![Angular Version](https://img.shields.io/badge/Angular-v21-dd0031?style=flat-square&logo=angular)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38b2ac?style=flat-square&logo=tailwind-css)
+![Axe-Core](https://img.shields.io/badge/Axe--Core-v4.11-orange?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## 📖 Overview
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+**AI Accessibility Auditor** is a powerful, developer-focused tool that streamlines the process of creating accessible web applications. By leveraging the industry-standard **axe-core** engine alongside a **custom rule engine**, this application not only identifies WCAG compliance violations but effectively **fixes them for you** with a single click.
 
-## Code scaffolding
+Whether you are auditing a legacy codebase or building new components, this tool ensures your markup meets **WCAG A, AA, and AAA** standards.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## ✨ Key Features
 
-```bash
-ng generate component component-name
-```
+-   **🔍 Deep Accessibility Analysis**: valid your code against real-world WCAG rules using `axe-core`.
+-   **🪄 Smart Auto-Fix**: Automatically resolves common issues:
+    -   **Semantic Elements**: Converts `<a role="button">` to native `<button>` elements (Best Practice).
+    -   **Missing Attributes**: Injects `alt` text for images and `aria-label` for buttons/inputs suitable for screen readers.
+    -   **ARIA Misuse**: Detects and fixes critical errors like `aria-hidden="true"` on focusable elements.
+-   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`) that go beyond standard validators to enforce HTML semantics.
+-   **🎨 Modern Code Editor**:
+    -   Syntax highlighting for HTML/Angular.
+    -   "Clear Editor" functionality for quick testing.
+    -   Real-time feedback interface.
+-   **🎚️ Adjustable Compliance Levels**: Test specifically for WCAG Level A, AA (Standard), or AAA (Strict).
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## 🛠️ Tech Stack
 
-```bash
-ng generate --help
-```
+-   **Framework**: [Angular v21](https://angular.io/) (Standalone Components, Signals, New Control Flow)
+-   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+-   **Core Engine**: [axe-core](https://www.deque.com/axe/)
+-   **Editor**: [PrismJS](https://prismjs.com/) for syntax highlighting
 
-## Building
+## 🚀 Getting Started
 
-To build the project run:
+### Prerequisites
 
-```bash
-ng build
-```
+-   Node.js (v18 or higher recommended)
+-   npm (v10+ recommended)
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### Installation
 
-## Running unit tests
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/your-username/a11y-audit-ai.git
+    cd a11y-audit-ai
+    ```
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-```bash
-ng test
-```
+3.  **Start the development server**
+    ```bash
+    npm start
+    ```
 
-## Running end-to-end tests
+4.  **Open the Application**
+    Navigate to `http://localhost:4200/` in your browser.
 
-For end-to-end (e2e) testing, run:
+## 💡 Usage Guide
 
-```bash
-ng e2e
-```
+1.  **Navigate to the Auditor**: Click on the "Auditor" tab in the navigation bar.
+2.  **Input Code**: Paste your HTML or Angular template code into the editor on the left.
+    *   *Tip: Hover over the top-right of the editor to see the "Limpiar" (Clear) button.*
+3.  **Select Level**: Choose your target WCAG compliance level (Default is **Level AA**).
+4.  **Analyze**: Click the **Analyze Code** button.
+5.  **Review & Fix**:
+    *   Issues will appear in the right-hand panel.
+    *   **Critical** issues are marked in Red, **Warnings** in Yellow.
+    *   If an issue has a **🪄 Auto-Fix** button, click it to automatically patch your code in the editor!
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### Example Fixes
 
-## Additional Resources
+| Issue | Original Code | Auto-Fixed Code |
+| :--- | :--- | :--- |
+| **Non-Semantic Button** | `<a role="button">Submit</a>` | `<button type="button">Submit</button>` |
+| **Missing Alt Text** | `<img src="logo.png">` | `<img alt="Description needed" src="logo.png">` |
+| **ARIA Hidden Focus** | `<div aria-hidden="true"><button>ok</button></div>` | `<div><button>ok</button></div>` |
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1.  Fork the project
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
