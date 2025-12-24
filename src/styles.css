@@ -1,3 +1,87 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import "tailwindcss";
+
+/* PrismJS Tomorrow Night Theme (Partial) */
+code[class*="language-"],
+pre[class*="language-"] {
+    color: #ccc;
+    background: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+    font-size: 14px;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    line-height: 1.5 !important;
+    tab-size: 4;
+    hyphens: none;
+}
+
+/* Comment */
+.token.comment,
+.token.block-comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #999;
+}
+
+/* Punctuation */
+.token.punctuation {
+    color: #ccc;
+}
+
+/* Tag */
+.token.tag,
+.token.attr-name,
+.token.namespace,
+.token.deleted {
+    color: #e2777a;
+}
+
+/* Function Name */
+.token.function-name {
+    color: #6196cc;
+}
+
+/* Boolean */
+.token.boolean,
+.token.number,
+.token.function {
+    color: #f08d49;
+}
+
+/* Property */
+.token.property,
+.token.class-name,
+.token.constant,
+.token.symbol {
+    color: #f8c555;
+}
+
+/* Selector */
+.token.selector,
+.token.important,
+.token.atrule,
+.token.keyword,
+.token.builtin {
+    color: #cc99cd;
+}
+
+/* String */
+.token.string,
+.token.char,
+.token.attr-value,
+.token.regex,
+.token.variable {
+    color: #7ec699;
+}
+
+/* Operator */
+.token.operator,
+.token.entity,
+.token.url {
+    color: #67cdcc;
+}

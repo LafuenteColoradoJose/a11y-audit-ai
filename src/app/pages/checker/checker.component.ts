@@ -1,10 +1,12 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AuditService, AuditIssue } from '../../services/audit.service';
+import { CodeEditorComponent } from '../../components/code-editor/code-editor.component';
 
 @Component({
-    selector: 'app-checker',
-    imports: [FormsModule],
-    template: `
+  selector: 'app-checker',
+  imports: [FormsModule, CodeEditorComponent],
+  template: `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="space-y-8">
         <!-- Header -->
@@ -39,9 +41,20 @@ import { FormsModule } from '@angular/forms';
             <div class="flex items-end">
               <button
                 (click)="analyzeCode()"
-                class="w-full rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-95"
+                [disabled]="isAnalyzing()"
+                class="w-full rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
               >
-                Analyze Code
+                @if (isAnalyzing()) {
+                  <span class="inline-flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing...
+                  </span>
+                } @else {
+                  Analyze Code
+                }
               </button>
             </div>
           </div>
@@ -49,37 +62,57 @@ import { FormsModule } from '@angular/forms';
 
         <!-- Editor & Results Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[600px]">
-          <!-- Simple Code Editor (Textarea for MVP) -->
+          <!-- Pro Code Editor -->
           <div class="flex flex-col h-full">
             <label class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200 mb-2">
               Source Code
             </label>
-            <textarea
-              [(ngModel)]="codeSnippet"
-              class="flex-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 font-mono text-xs dark:bg-zinc-900 dark:text-gray-300 dark:ring-zinc-700 p-4 resize-none"
-              placeholder="<!-- Paste your element here -->
-<button>Click me</button>"
-            ></textarea>
+            <div class="flex-1 rounded-md overflow-hidden shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-700">
+               <app-code-editor [(code)]="codeSnippet" />
+            </div>
           </div>
 
           <!-- Results Panel -->
-          <div class="flex flex-col h-full bg-gray-50 dark:bg-zinc-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700 p-6">
+          <div class="flex flex-col h-full bg-gray-50 dark:bg-zinc-900 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700 p-6 overflow-hidden">
              <label class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-200 mb-2">
               Audit Results
             </label>
             
-            @if (results().length === 0) {
+            @if (results().length === 0 && !hasAnalyzed()) {
               <div class="flex flex-1 items-center justify-center text-center">
-                <p class="text-sm text-gray-500">No issues found yet... or maybe you haven't analyzed anything!</p>
+                <p class="text-sm text-gray-500">Paste some code and click Analyze to start.</p>
+              </div>
+            } @else if (results().length === 0 && hasAnalyzed()) {
+               <div class="flex flex-1 items-center justify-center text-center">
+                <p class="text-sm text-green-500 font-medium">✨ No obvious issues found! You are a pro!</p>
               </div>
             } @else {
-              <div class="overflow-y-auto space-y-4">
-                 @for (res of results(); track $index) {
-                   <div class="p-4 bg-white dark:bg-zinc-800 rounded-lg border-l-4 border-yellow-400 shadow-sm">
-                     <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                       <span class="text-yellow-600">⚠️ Recommendation</span>
+              <div class="overflow-y-auto space-y-4 pr-2">
+                 @for (issue of results(); track issue.id) {
+                   <div class="p-4 bg-white dark:bg-zinc-800 rounded-lg border-l-4 shadow-sm"
+                        [class.border-red-500]="issue.severity === 'high'"
+                        [class.border-yellow-400]="issue.severity === 'medium'"
+                        [class.border-blue-400]="issue.severity === 'low'">
+                     <h4 class="text-sm font-bold flex items-center gap-2 justify-between"
+                         [class.text-red-600]="issue.severity === 'high'"
+                         [class.text-yellow-600]="issue.severity === 'medium'"
+                         [class.text-blue-600]="issue.severity === 'low'">
+                        <span class="flex items-center gap-2">
+                          @if(issue.severity === 'high') { ⛔ Critical }
+                          @else if(issue.severity === 'medium') { ⚠️ Warning }
+                          @else { ℹ️ Info }
+                        </span>
+
+                        @if(canFix(issue)) {
+                          <button (click)="fixIssue(issue)" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 px-2 py-1 rounded hover:bg-indigo-200 transition-colors flex items-center gap-1">
+                             🪄 Auto-Fix
+                          </button>
+                        }
                      </h4>
-                     <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ res }}</p>
+                     <p class="mt-1 text-sm font-medium text-gray-900 dark:text-gray-200">{{ issue.message }}</p>
+                     <p class="mt-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-zinc-700 p-2 rounded">
+                       💡 {{ issue.suggestion }}
+                     </p>
                    </div>
                  }
               </div>
@@ -89,24 +122,41 @@ import { FormsModule } from '@angular/forms';
       </div>
     </div>
   `,
-    changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CheckerComponent {
-    selectedLevel = signal('AA'); // Signals for modern state
-    codeSnippet = signal('');
-    results = signal<string[]>([]); // Array of string results
+  private auditService = inject(AuditService);
 
-    analyzeCode() {
-        // Mock AI response for now
-        if (!this.codeSnippet()) return;
+  selectedLevel = signal('AA');
+  codeSnippet = signal('<!-- Paste your element here -->\n<button>Click me</button>'); // Default value
+  results = signal<AuditIssue[]>([]);
+  isAnalyzing = signal(false);
+  hasAnalyzed = signal(false);
 
-        // Simulating "thinking"
-        setTimeout(() => {
-            this.results.set([
-                `For WCAG Level ${this.selectedLevel()}: Ensure all interactive elements have accessible names.`,
-                'Consider adding aria-label if the button text is purely iconic.',
-                'Contrast ratio check: Pending analysis.'
-            ]);
-        }, 500);
-    }
+  analyzeCode() {
+    if (!this.codeSnippet()) return;
+
+    this.isAnalyzing.set(true);
+    this.hasAnalyzed.set(false);
+    this.results.set([]);
+
+    this.auditService.analyzeCode(this.codeSnippet(), this.selectedLevel())
+      .subscribe((issues) => {
+        this.results.set(issues);
+        this.isAnalyzing.set(false);
+        this.hasAnalyzed.set(true);
+      });
+  }
+
+  canFix(issue: AuditIssue): boolean {
+    return ['image-alt', 'button-name'].includes(issue.ruleId);
+  }
+
+  fixIssue(issue: AuditIssue) {
+    const fixedCode = this.auditService.applyFix(this.codeSnippet(), issue);
+    this.codeSnippet.set(fixedCode);
+    // Optionally re-analyze or just remove the issue from the list
+    // Let's re-analyze for feedback loop
+    this.analyzeCode();
+  }
 }
