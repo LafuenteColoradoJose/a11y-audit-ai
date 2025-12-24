@@ -21,6 +21,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
                  class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
                 Home
               </a>
+              <a routerLink="/about"
+                 routerLinkActive="border-indigo-500 text-gray-900 dark:text-white"
+                 [routerLinkActiveOptions]="{exact: true}"
+                 class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200">
+                About
+              </a>
             </div>
           </div>
           <div class="flex items-center">
