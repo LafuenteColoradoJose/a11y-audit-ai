@@ -22,7 +22,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
             </a>
 
             <!-- GitHub -->
-            <a href="https://github.com/joselafuente" target="_blank" rel="noopener noreferrer" 
+            <a href="https://github.com/LafuenteColoradoJose" target="_blank" rel="noopener noreferrer" 
                class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                aria-label="GitHub">
               <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -31,7 +31,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
             </a>
 
             <!-- LinkedIn -->
-            <a href="https://linkedin.com/in/jose-lafuente-colorado" target="_blank" rel="noopener noreferrer" 
+            <a href="https://www.linkedin.com/in/joselafuentecolorado/" target="_blank" rel="noopener noreferrer" 
                class="text-gray-400 hover:text-[#0A66C2] transition-colors"
                aria-label="LinkedIn">
                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">

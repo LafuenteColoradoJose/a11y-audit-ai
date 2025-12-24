@@ -11,7 +11,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <div class="flex">
             <div class="shrink-0 flex items-center">
               <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600">
-                Angular21
+                A11y Auditor
               </span>
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">

@@ -149,7 +149,8 @@ export class CheckerComponent {
   }
 
   canFix(issue: AuditIssue): boolean {
-    return ['image-alt', 'button-name'].includes(issue.ruleId);
+    // Check if we have logic for this rule in the service
+    return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus'].includes(issue.ruleId);
   }
 
   fixIssue(issue: AuditIssue) {

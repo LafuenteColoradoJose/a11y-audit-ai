@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "Angular21": {
+    "a11y-audit-ai": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -62,10 +62,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "Angular21:build:production"
+              "buildTarget": "a11y-audit-ai:build:production"
             },
             "development": {
-              "buildTarget": "Angular21:build:development"
+              "buildTarget": "a11y-audit-ai:build:development"
             }
           },
           "defaultConfiguration": "development"

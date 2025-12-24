@@ -18,9 +18,16 @@ export class AuditService {
     /**
      * Analyzes the code using axe-core for real WCAG validation.
      */
+    /**
+     * Analyzes the code using axe-core for real WCAG validation and custom checks.
+     */
     analyzeCode(code: string, level: string): Observable<AuditIssue[]> {
         return from(this.runAxeAudit(code, level)).pipe(
-            map(axeResults => this.mapAxeToAuditIssues(axeResults))
+            map(axeResults => {
+                const axeIssues = this.mapAxeToAuditIssues(axeResults);
+                const customIssues = this.runCustomAudit(code);
+                return [...axeIssues, ...customIssues];
+            })
         );
     }
 
@@ -34,15 +41,11 @@ export class AuditService {
         switch (issue.ruleId) {
             case 'image-alt':
                 // Fix: Add alt="" to img tags that don't have it
-                // Basic regex replacement for the first occurrence or all, simplistic for MVP
                 newCode = newCode.replace(/<img\s+(?![^>]*\balt=)([^>]+)>/gi, '<img alt="Description needed" $1>');
                 break;
 
             case 'button-name':
                 // Fix: Add aria-label="Action" to buttons if they lack it.
-                // We look for the opening <button> tag that doesn't already have an aria-label.
-                // This regex matches <button [anything] > and injects aria-label there.
-                // It's safer than trying to match the closing tag for nested content.
                 newCode = newCode.replace(/<button\s+(?![^>]*\baria-label=)([^>]*)>/gi, '<button aria-label="Action Name" $1>');
                 break;
 
@@ -51,9 +54,57 @@ export class AuditService {
                 // Fix: Add aria-label to inputs
                 newCode = newCode.replace(/<input\s+(?![^>]*\b(aria-label|id)=)([^>]+)>/gi, '<input aria-label="Input field" $1>');
                 break;
+
+            case 'prefer-native-button':
+                // Fix: Replace <a role="button"> with <button type="button">
+                // Strategy: Find the tag, replace opening <a... > with <button type="button"... > (removing role=button)
+                // and replace closing </a> with </button>.
+                // Note: deeply nested <a> tags might be tricky with regex, but standard singular replacements work for simple cases.
+
+                // 1. Remove role="button" and href from opening tag, change valid attributes if needed.
+                // We'll do a robust generic replacement for the specific line/block if possible, but global replace is safer for MVP demos.
+
+                // transform <a ... role="button" ...> content </a>  ->  <button type="button" ...> content </button>
+                // We remove 'role="button"' and 'href="..."' from the attributes.
+                newCode = newCode.replace(/<a\s+([^>]*?)role=["']button["']([^>]*?)>(.*?)<\/a>/gis, (match, before, after, content) => {
+                    // Clean attributes: remove href if present
+                    let attrs = (before + ' ' + after).replace(/href=["'][^"']*["']\s*/gi, '');
+                    // Clean double spaces
+                    attrs = attrs.replace(/\s+/g, ' ').trim();
+                    return `<button type="button" ${attrs}>${content}</button>`;
+                });
+                break;
+
+            case 'aria-hidden-focus':
+                // Fix: Remove aria-hidden="true" because it shouldn't be on containers with focusable elements
+                newCode = newCode.replace(/\s?aria-hidden=["']true["']/gi, '');
+                break;
         }
 
         return newCode;
+    }
+
+    private runCustomAudit(code: string): AuditIssue[] {
+        const issues: AuditIssue[] = [];
+
+        // Rule: Prefer native <button>
+        // Use a RegEx to find <(tag) ... role="button" ...> where tag is NOT button or input
+        // We capture the tag name
+        const roleButtonRegex = /<((?!button|input)\w+)\s+[^>]*\brole=["']button["'][^>]*>/gi;
+        let match;
+        // We operate on the string. Note that matches might overlap roughly if nested, but usually okay for flat structures.
+        while ((match = roleButtonRegex.exec(code)) !== null) {
+            const tagName = match[1];
+            issues.push({
+                id: `custom-prefer-native-button-${Date.now()}-${Math.random()}`,
+                ruleId: 'prefer-native-button',
+                severity: 'medium', // Violation of 1st rule of ARIA
+                message: `Avoid using role="button" on <${tagName}> elements. Use the native <button> element instead.`,
+                suggestion: `Replace <${tagName} role="button"> with <button>.`
+            });
+        }
+
+        return issues;
     }
 
     private async runAxeAudit(startHtml: string, level: string): Promise<axe.Result[]> {

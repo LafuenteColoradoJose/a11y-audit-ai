@@ -26,8 +26,15 @@ import 'prismjs/components/prism-typescript';
         autocorrect="off"
       ></textarea>
       
-      <div class="absolute top-2 right-2 opacity-50 text-[10px] text-white pointer-events-none group-hover:opacity-100 transition-opacity">
-        HTML/Angular
+      <div class="absolute top-2 right-2 flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity z-10">
+        <span class="text-[10px] text-white pointer-events-none">HTML/Angular</span>
+        <button 
+          type="button"
+          (click)="clearCode()"
+          class="px-2 py-0.5 text-xs bg-red-600 hover:bg-red-500 text-white rounded shadow transition-colors cursor-pointer"
+        >
+          Limpiar
+        </button>
       </div>
     </div>
   `,
@@ -62,5 +69,9 @@ export class CodeEditorComponent {
 
     onCodeChange(newValue: string) {
         this.code.set(newValue);
+    }
+
+    clearCode() {
+        this.code.set('');
     }
 }
