@@ -47,7 +47,7 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/your-username/a11y-audit-ai.git
+    git clone https://github.com/LafuenteColoradoJose/a11y-audit-ai.git
     cd a11y-audit-ai
     ```
 
