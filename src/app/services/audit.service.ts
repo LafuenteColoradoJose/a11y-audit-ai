@@ -79,6 +79,26 @@ export class AuditService {
                 // Fix: Remove aria-hidden="true" because it shouldn't be on containers with focusable elements
                 newCode = newCode.replace(/\s?aria-hidden=["']true["']/gi, '');
                 break;
+
+            case 'minimize-tabindex':
+                // Fix: Replace tabindex="[1-9]*" with tabindex="0"
+                // We want to avoid negative numbers (tabindex="-1") here, targeting only positives
+                newCode = newCode.replace(/tabindex=["']([1-9][0-9]*)["']/gi, 'tabindex="0"');
+                break;
+
+            case 'missing-skip-link':
+                // Fix: Prepend the skip link to the <header>
+                // We assume <header> exists because the rule triggered.
+                // We use a CSS class 'sr-only' (screen reader only) which is standard in Tailwind/Bootstrap
+                // 'focus:not-sr-only' allows it to appear when focused.
+                const skipLink = '\n  <a href="#main" class="sr-only focus:not-sr-only">Skip to main content</a>';
+                newCode = newCode.replace(/<header([^>]*)>/i, '<header$1>' + skipLink);
+                break;
+
+            case 'focus-obscured':
+                // Fix: Replace 'outline: none' or 'outline: 0' with a visible focus ring.
+                newCode = newCode.replace(/outline:\s*(none|0)\s*;?/gi, 'outline: auto 5px -webkit-focus-ring-color;');
+                break;
         }
 
         return newCode;
@@ -89,18 +109,63 @@ export class AuditService {
 
         // Rule: Prefer native <button>
         // Use a RegEx to find <(tag) ... role="button" ...> where tag is NOT button or input
-        // We capture the tag name
         const roleButtonRegex = /<((?!button|input)\w+)\s+[^>]*\brole=["']button["'][^>]*>/gi;
         let match;
-        // We operate on the string. Note that matches might overlap roughly if nested, but usually okay for flat structures.
         while ((match = roleButtonRegex.exec(code)) !== null) {
             const tagName = match[1];
             issues.push({
                 id: `custom-prefer-native-button-${Date.now()}-${Math.random()}`,
                 ruleId: 'prefer-native-button',
-                severity: 'medium', // Violation of 1st rule of ARIA
+                severity: 'medium',
                 message: `Avoid using role="button" on <${tagName}> elements. Use the native <button> element instead.`,
                 suggestion: `Replace <${tagName} role="button"> with <button>.`
+            });
+        }
+
+        // Rule: Avoid positive tabindex
+        // Regex to find tabindex="[1-9][0-9]*"
+        const positiveTabindexRegex = /<(\w+)\s+[^>]*\btabindex=["']([1-9][0-9]*)["'][^>]*>/gi;
+        let tabIndexMatch;
+        while ((tabIndexMatch = positiveTabindexRegex.exec(code)) !== null) {
+            const tagName = tabIndexMatch[1];
+            const value = tabIndexMatch[2];
+            issues.push({
+                id: `custom-minimize-tabindex-${Date.now()}-${Math.random()}`,
+                ruleId: 'minimize-tabindex',
+                severity: 'medium',
+                message: `Avoid using positive tabindex "${value}" on <${tagName}>. It disrupts valid tab order.`,
+                suggestion: `Change tabindex="${value}" to tabindex="0" or move the element in the DOM.`
+            });
+        }
+
+        // Rule: Missing Skip Link
+        // Check if <header> exists
+        if (/<header/i.test(code)) {
+            // Check if there is a link that looks like a skip link inside the header or just before nav
+            // Simplistic check: look for <a> with "skip" in text or href starting with #
+            const hasSkipLink = /<a\s+[^>]*href=["']#[^"']+["'][^>]*>.*?skip.*?<\/a>/is.test(code);
+
+            if (!hasSkipLink) {
+                issues.push({
+                    id: `custom-missing-skip-link-${Date.now()}-${Math.random()}`,
+                    ruleId: 'missing-skip-link',
+                    severity: 'high',
+                    message: 'Missing "Skip to main content" link. Users should be able to bypass repeated navigation.',
+                    suggestion: 'Add a skip link as the first element in your <header>.'
+                });
+            }
+        }
+
+        // Rule: Focus Obscured (outline: none / 0)
+        // Detects explicit removal of focus outline in style attributes or style blocks
+        const focusObscuredRegex = /outline:\s*(none|0)/gi;
+        if (focusObscuredRegex.test(code)) {
+            issues.push({
+                id: `custom-focus-obscured-${Date.now()}-${Math.random()}`,
+                ruleId: 'focus-obscured',
+                severity: 'high',
+                message: 'Avoid "outline: none" or "outline: 0". It makes the element inaccessible to keyboard users.',
+                suggestion: 'Replace with "outline: auto 5px -webkit-focus-ring-color" or a visible custom outline.'
             });
         }
 
