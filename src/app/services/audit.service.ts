@@ -53,8 +53,8 @@ export class AuditService {
 
     private async fixWithGemini(code: string, issue: AuditIssue): Promise<string> {
         const genAI = new GoogleGenerativeAI(environment.geminiApiKey);
-        // Use gemini-pro as it is the most widely supported model for standard API keys
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // Use gemini-1.5-flash as 'gemini-pro' is sometimes deprecated on free tier
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
         You are an expert in Web Accessibility (WCAG).
