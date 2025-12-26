@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable, from, map } from 'rxjs';
+import { Observable, from, map, of } from 'rxjs';
 import axe from 'axe-core';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { environment } from '../../environments/environment';
 
 export interface AuditIssue {
     id: string;
@@ -33,7 +35,57 @@ export class AuditService {
      * Attempts to automatically fix the issue in the provided code snippet.
      * Returns the modified code.
      */
-    applyFix(code: string, issue: AuditIssue): string {
+    /**
+     * Attempts to automatically fix the issue in the provided code snippet.
+     * Returns the modified code.
+     */
+    async applyFix(code: string, issue: AuditIssue): Promise<string> {
+        if (environment.geminiApiKey && environment.geminiApiKey !== 'YOUR_API_KEY_HERE') {
+            try {
+                return await this.fixWithGemini(code, issue);
+            } catch (error) {
+                console.error('Gemini fix failed, falling back to Regex', error);
+                return this.applyRegexFix(code, issue);
+            }
+        }
+        return this.applyRegexFix(code, issue);
+    }
+
+    private async fixWithGemini(code: string, issue: AuditIssue): Promise<string> {
+        const genAI = new GoogleGenerativeAI(environment.geminiApiKey);
+        // Use gemini-pro as it is the most widely supported model for standard API keys
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+        const prompt = `
+        You are an expert in Web Accessibility (WCAG).
+        Fix the following accessibility issue in the provided HTML/Angular code:
+        
+        Issue: "${issue.message}"
+        Suggestion: "${issue.suggestion}"
+        Rule ID: "${issue.ruleId}"
+        
+        Current Code:
+        ${code}
+        
+        Instructions:
+        1. return ONLY the corrected code.
+        2. Do not add markdown code blocks (backticks).
+        3. Do not add explanations.
+        4. Preserve formatting as much as possible.
+        5. If you cannot fix it, return the original code.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        let text = response.text();
+
+        // Clean up any markdown code blocks if the model ignored instructions
+        text = text.replace(/^```html\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '');
+
+        return text.trim();
+    }
+
+    private applyRegexFix(code: string, issue: AuditIssue): string {
         let newCode = code;
 
         switch (issue.ruleId) {
@@ -54,9 +106,10 @@ export class AuditService {
                 break;
 
             case 'prefer-native-button':
-                // Fix: Replace <a role="button"> with <button type="button">
-                newCode = newCode.replace(/<a\s+([^>]*?)role=["']button["']([^>]*?)>(.*?)<\/a>/gis, (match, before, after, content) => {
-                    let attrs = (before + ' ' + after).replace(/href=["'][^"']*["']\s*/gi, '');
+                // Fix: Replace <a|div|span role="button"> with <button type="button">
+                // This regex captures the tag name (1), attributes before role (2), attributes after role (3), and content (4)
+                newCode = newCode.replace(/<(a|div|span)\s+([^>]*?)role=["']button["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, after, content) => {
+                    let attrs = (before + ' ' + after).replace(/href=["'][^"']*["']\s*/gi, ''); // Remove href if it was an <a>
                     attrs = attrs.replace(/\s+/g, ' ').trim();
                     return `<button type="button" ${attrs}>${content}</button>`;
                 });

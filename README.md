@@ -4,6 +4,7 @@
 
 ![Angular Version](https://img.shields.io/badge/Angular-v21-dd0031?style=flat-square&logo=angular)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38b2ac?style=flat-square&logo=tailwind-css)
+![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?style=flat-square&logo=googlebard)
 ![Axe-Core](https://img.shields.io/badge/Axe--Core-v4.11-orange?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 [![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-000000?style=flat-square&logo=vercel)](https://a11y-audit-ai.vercel.app/)
@@ -14,14 +15,17 @@
 
 ## 📖 Overview
 
-**AI Accessibility Auditor** is a powerful, developer-focused tool that streamlines the process of creating accessible web applications. By leveraging the industry-standard **axe-core** engine alongside a **custom rule engine**, this application not only identifies WCAG compliance violations but effectively **fixes them for you** with a single click.
+**AI Accessibility Auditor** is a powerful, developer-focused tool that streamlines the process of creating accessible web applications. By combining the industry-standard **axe-core** engine with **Google's Gemini AI**, this application not only identifies WCAG compliance violations but intelligently **generates context-aware fixes** for you.
 
 Whether you are auditing a legacy codebase or building new components, this tool ensures your markup meets **WCAG A, AA, and AAA** standards.
 
 ## ✨ Key Features
 
 -   **🔍 Deep Accessibility Analysis**: valid your code against real-world WCAG rules using `axe-core`.
--   **🪄 Smart Auto-Fix**: Automatically resolves common issues:
+-   **🤖 Powered by Gemini AI**: Uses Google's LLM to understand your code's context and generate smart fixes (e.g., writing meaningful `alt` text or restructuring complex components).
+-   **🪄 Smart Auto-Fix (Hybrid)**:
+    -   **AI Mode**: Attempts to fix any issue using Generative AI for the best possible result.
+    -   **Regex Fallback**: Instant, offline-capable fixes for common patterns if AI is unavailable.
     -   **Semantic Elements**: Converts `<a role="button">` to native `<button>` elements (Best Practice).
     -   **Focus Management**: Corrects positive `tabindex` values to `0` and removes `outline: none` to ensure keyboard accessibility.
     -   **Navigation**: Automatically injects "Skip to main content" links in `<header>` areas.
@@ -38,6 +42,7 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 -   **Framework**: [Angular v21](https://angular.io/) (Standalone Components, Signals, New Control Flow)
 -   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+-   **AI Model**: [Google Gemini Pro](https://deepmind.google/technologies/gemini/) (via Generative AI SDK)
 -   **Core Engine**: [axe-core](https://www.deque.com/axe/)
 -   **Editor**: [PrismJS](https://prismjs.com/) for syntax highlighting
 
@@ -61,7 +66,19 @@ Whether you are auditing a legacy codebase or building new components, this tool
     npm install
     ```
 
-3.  **Start the development server**
+3.  **Configure API Key (Optional for AI features)**
+    *   Get a free API Key from [Google AI Studio](https://aistudio.google.com/).
+    *   Open `src/environments/environment.development.ts`.
+    *   Paste your key:
+        ```typescript
+        export const environment = {
+          production: false,
+          geminiApiKey: 'YOUR_API_KEY_HERE'
+        };
+        ```
+    *   *Note: If no key is provided, the tool falls back to Rule-based (Regex) fixes.*
+
+4.  **Start the development server**
     ```bash
     npm start
     ```

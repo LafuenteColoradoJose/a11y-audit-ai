@@ -104,8 +104,19 @@ import { CodeEditorComponent } from '../../components/code-editor/code-editor.co
                         </span>
 
                         @if(canFix(issue)) {
-                          <button (click)="fixIssue(issue)" class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 px-2 py-1 rounded hover:bg-indigo-200 transition-colors flex items-center gap-1">
-                             🪄 Auto-Fix
+                          <button 
+                            (click)="fixIssue(issue)" 
+                            [disabled]="isFixing() === issue.id || isAnalyzing()"
+                            class="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 px-2 py-1 rounded hover:bg-indigo-200 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait">
+                               @if(isFixing() === issue.id) {
+                                 <svg class="animate-spin h-3 w-3 text-indigo-700 dark:text-indigo-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                 </svg>
+                                 Fixing...
+                               } @else {
+                                 🪄 Auto-Fix
+                               }
                           </button>
                         }
                      </h4>
@@ -148,13 +159,22 @@ export class CheckerComponent {
       });
   }
 
+  isFixing = signal<string | null>(null); // Store the ID of the issue being fixed
+
   canFix(issue: AuditIssue): boolean {
+    // We can expand this list if Gemini is active, but for now let's keep the "known rule" set
+    // plus allow Gemini to try its best on these.
     return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured'].includes(issue.ruleId);
   }
 
-  fixIssue(issue: AuditIssue) {
-    const fixedCode = this.auditService.applyFix(this.codeSnippet(), issue);
-    this.codeSnippet.set(fixedCode);
-    this.analyzeCode();
+  async fixIssue(issue: AuditIssue) {
+    this.isFixing.set(issue.id);
+    try {
+      const fixedCode = await this.auditService.applyFix(this.codeSnippet(), issue);
+      this.codeSnippet.set(fixedCode);
+      this.analyzeCode();
+    } finally {
+      this.isFixing.set(null);
+    }
   }
 }
