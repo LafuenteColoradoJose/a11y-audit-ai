@@ -11,17 +11,14 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
           <!-- Social Links Area -->
           <div class="flex justify-center space-x-6 md:order-2">
             
-            <!-- Portfolio (Primary) -->
             <a href="https://www.joselafuente.dev/" target="_blank" rel="noopener noreferrer" 
                class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" 
                aria-label="Visit José Lafuente Portfolio">
-               <!-- Globe Icon -->
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S12 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S12 3 12 3m0-18a9 9 0 018.716 6.747M12 3a9 9 0 00-8.716 6.747M12 3c2.485 0 4.5 4.03 4.5 9s-2.015 9-4.5 9m9-9h.008v.008H21.75V12h-.758m-17.25 0h.008v.008H3v-.758" />
               </svg>
             </a>
 
-            <!-- GitHub -->
             <a href="https://github.com/LafuenteColoradoJose" target="_blank" rel="noopener noreferrer" 
                class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                aria-label="GitHub">
@@ -30,7 +27,6 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
               </svg>
             </a>
 
-            <!-- LinkedIn -->
             <a href="https://www.linkedin.com/in/joselafuentecolorado/" target="_blank" rel="noopener noreferrer" 
                class="text-gray-400 hover:text-[#0A66C2] transition-colors"
                aria-label="LinkedIn">
@@ -40,7 +36,6 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
             </a>
           </div>
 
-          <!-- Copyright Text -->
           <div class="mt-8 md:mt-0 md:order-1">
              <p class="text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
               &copy; {{ currentYear }} Developed by 

@@ -1,16 +1,16 @@
 import { Component, ChangeDetectionStrategy, signal, computed, effect, model } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Prism from 'prismjs';
-import 'prismjs/components/prism-markup'; // HTML
+import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 
 @Component({
-    selector: 'app-code-editor',
-    standalone: true,
-    imports: [FormsModule],
-    template: `
+  selector: 'app-code-editor',
+  standalone: true,
+  imports: [FormsModule],
+  template: `
     <div class="relative w-full h-full min-h-[300px] border border-gray-600 rounded bg-[#2d2d2d] overflow-hidden group">
       <!-- Highlighted Layer -->
       <pre class="language-html m-0 p-4 absolute inset-0 pointer-events-none font-mono text-sm" aria-hidden="true"><code [innerHTML]="highlightedCode()"></code></pre>
@@ -38,40 +38,34 @@ import 'prismjs/components/prism-typescript';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     textarea, pre, code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
       font-size: 14px !important;
       line-height: 1.5 !important;
     }
-    /* Hide scrollbar for cleaner look if needed, but keeping it is better for UX */
+
   `],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CodeEditorComponent {
-    code = model<string>('');
+  code = model<string>('');
 
-    highlightedCode = computed(() => {
-        const raw = this.code() || '';
-        // Use Prism to highlight using HTML grammar
-        // Check if Prism is loaded
-        if (!Prism) return raw;
+  highlightedCode = computed(() => {
+    const raw = this.code() || '';
+    if (!Prism) return raw;
 
-        // Safety check for grammar
-        const grammar = Prism.languages['html'];
-        if (!grammar) return raw;
+    const grammar = Prism.languages['html'];
+    if (!grammar) return raw;
 
-        // We add a trailing newline to match textarea behavior if needed, 
-        // but typically just highlighting the raw code is enough.
-        // Sometimes textareas allow scrolling past end.
-        return Prism.highlight(raw, grammar, 'html');
-    });
+    return Prism.highlight(raw, grammar, 'html');
+  });
 
-    onCodeChange(newValue: string) {
-        this.code.set(newValue);
-    }
+  onCodeChange(newValue: string) {
+    this.code.set(newValue);
+  }
 
-    clearCode() {
-        this.code.set('');
-    }
+  clearCode() {
+    this.code.set('');
+  }
 }

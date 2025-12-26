@@ -128,7 +128,7 @@ export class CheckerComponent {
   private auditService = inject(AuditService);
 
   selectedLevel = signal('AA');
-  codeSnippet = signal('<!-- Paste your element here -->\n<button>Click me</button>'); // Default value
+  codeSnippet = signal('<!-- Paste your element here -->\n<button>Click me</button>');
   results = signal<AuditIssue[]>([]);
   isAnalyzing = signal(false);
   hasAnalyzed = signal(false);
@@ -149,15 +149,12 @@ export class CheckerComponent {
   }
 
   canFix(issue: AuditIssue): boolean {
-    // Check if we have logic for this rule in the service
     return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured'].includes(issue.ruleId);
   }
 
   fixIssue(issue: AuditIssue) {
     const fixedCode = this.auditService.applyFix(this.codeSnippet(), issue);
     this.codeSnippet.set(fixedCode);
-    // Optionally re-analyze or just remove the issue from the list
-    // Let's re-analyze for feedback loop
     this.analyzeCode();
   }
 }

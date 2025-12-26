@@ -36,7 +36,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             </div>
           </div>
           <div class="flex items-center">
-            <!-- Right side / Auth buttons could go here -->
+
           </div>
         </div>
       </div>
