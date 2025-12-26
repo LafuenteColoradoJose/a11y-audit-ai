@@ -23,9 +23,11 @@ Whether you are auditing a legacy codebase or building new components, this tool
 -   **🔍 Deep Accessibility Analysis**: valid your code against real-world WCAG rules using `axe-core`.
 -   **🪄 Smart Auto-Fix**: Automatically resolves common issues:
     -   **Semantic Elements**: Converts `<a role="button">` to native `<button>` elements (Best Practice).
+    -   **Focus Management**: Corrects positive `tabindex` values to `0` and removes `outline: none` to ensure keyboard accessibility.
+    -   **Navigation**: Automatically injects "Skip to main content" links in `<header>` areas.
     -   **Missing Attributes**: Injects `alt` text for images and `aria-label` for buttons/inputs suitable for screen readers.
     -   **ARIA Misuse**: Detects and fixes critical errors like `aria-hidden="true"` on focusable elements.
--   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`) that go beyond standard validators to enforce HTML semantics.
+-   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators to enforce HTML semantics.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
     -   "Clear Editor" functionality for quick testing.
@@ -84,6 +86,8 @@ Whether you are auditing a legacy codebase or building new components, this tool
 | Issue | Original Code | Auto-Fixed Code |
 | :--- | :--- | :--- |
 | **Non-Semantic Button** | `<a role="button">Submit</a>` | `<button type="button">Submit</button>` |
+| **Positive Tabindex** | `<div tabindex="3">...</div>` | `<div tabindex="0">...</div>` |
+| **Hidden Focus** | `style="outline: none"` | `style="outline: auto 5px..."` |
 | **Missing Alt Text** | `<img src="logo.png">` | `<img alt="Description needed" src="logo.png">` |
 | **ARIA Hidden Focus** | `<div aria-hidden="true"><button>ok</button></div>` | `<div><button>ok</button></div>` |
 
