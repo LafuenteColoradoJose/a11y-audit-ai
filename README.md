@@ -28,6 +28,10 @@ Whether you are auditing a legacy codebase or building new components, this tool
     -   **Legacy Fallback**: Instant, offline-capable fixes for simple patterns if AI is unreachable.
     -   **Semantic Upgrades**: Converts `<div role="form">` to `<form>`, `<a role="button">` to `<button>`, and ensures proper fieldset/legend grouping.
     -   **Form Mastery**: Enforces WCAG 1.3.5 compliance by checking and fixing missing `autocomplete` attributes on critical fields (email, tel, etc.).
+    -   **Multimedia Support (WCAG 1.2)**:
+        -   **Video**: Detects missing `<track>` (captions) and injects placeholders.
+        -   **Audio**: Identifies missing transcripts and generates `<details>` expandable transcript placeholders.
+        -   **Autoplay**: Automatically removes accessible-hostile `autoplay` attributes.
 -   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
@@ -99,6 +103,10 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 | Issue | Original Code | Auto-Fixed Code |
 | :--- | :--- | :--- |
+| **Missing Autocomplete** | `<input type="email">` | `<input autocomplete="email" type="email">` |
+| **Video Captions** | `<video src="..."></video>` | `<video...><track kind="captions"...></video>` |
+| **Autoplay Violation** | `<video autoplay ...>` | `<video ...>` (Autoplay removed) |
+| **Audio Transcript** | `<audio src="..."></audio>` | `<audio...></audio><details><summary>Transcript</summary>...</details>` |
 | **Non-Semantic Button** | `<a role="button">Submit</a>` | `<button type="button">Submit</button>` |
 | **Positive Tabindex** | `<div tabindex="3">...</div>` | `<div tabindex="0">...</div>` |
 | **Hidden Focus** | `style="outline: none"` | `style="outline: auto 5px..."` |
