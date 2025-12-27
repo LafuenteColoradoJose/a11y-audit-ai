@@ -320,6 +320,30 @@ export class AuditService {
             });
         }
 
+        // Rule: Absolute Font Size (px)
+        const pxFontRegex = /font-size\s*:\s*[0-9]+px\b/gi;
+        if (pxFontRegex.test(code)) {
+            issues.push({
+                id: `custom-px-font-${Date.now()}-${Math.random()}`,
+                ruleId: 'absolute-font-size',
+                severity: 'medium',
+                message: 'Absolute font-size (px) detected. This disables the user\'s browser font size settings.',
+                suggestion: 'Use relative units like "rem" or "em" instead of "px". (16px ≈ 1rem)'
+            });
+        }
+
+        // Rule: Justified Text
+        const justifyRegex = /text-align\s*:\s*justify\b/gi;
+        if (justifyRegex.test(code)) {
+            issues.push({
+                id: `custom-justify-text-${Date.now()}-${Math.random()}`,
+                ruleId: 'justified-text',
+                severity: 'low',
+                message: 'Justified text alignment detected. This creates "rivers of whitespace" that are hard to read for dyslexic users.',
+                suggestion: 'Use "text-align: left" (or start) for better readability.'
+            });
+        }
+
         return issues;
     }
 

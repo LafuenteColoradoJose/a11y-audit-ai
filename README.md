@@ -37,6 +37,9 @@ Whether you are auditing a legacy codebase or building new components, this tool
         -   **Auto-Conversion**: Automatically transforms non-semantic interactive elements into native `<button>` tags, preserving event handlers.
     -   **Color Consistency**:
         -   **Hardcoded Colors**: Warns against using fixed HEX/RGB values in styles, promoting CSS Variables for Dark Mode/High Contrast support.
+    -   **Accessible Typography**:
+        -   **Absoute Units**: Flags `px` usage for font sizes, suggesting scalable `rem`/`em` units.
+        -   **Justified Text**: Detects and warns about `text-align: justify` which hurts readability for dyslexic users.
 -   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
