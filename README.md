@@ -32,6 +32,9 @@ Whether you are auditing a legacy codebase or building new components, this tool
         -   **Video**: Detects missing `<track>` (captions) and injects placeholders.
         -   **Audio**: Identifies missing transcripts and generates `<details>` expandable transcript placeholders.
         -   **Autoplay**: Automatically removes accessible-hostile `autoplay` attributes.
+    -   **SPA / Interaction**:
+        -   **Mouse-Only Events**: Detects `<div (click)>` or `onclick` without keyboard support.
+        -   **Auto-Conversion**: Automatically transforms non-semantic interactive elements into native `<button>` tags, preserving event handlers.
 -   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
@@ -103,6 +106,7 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 | Issue | Original Code | Auto-Fixed Code |
 | :--- | :--- | :--- |
+| **Mouse-Only Interaction** | `<div (click)="save()">Save</div>` | `<button type="button" (click)="save()">Save</button>` |
 | **Missing Autocomplete** | `<input type="email">` | `<input autocomplete="email" type="email">` |
 | **Video Captions** | `<video src="..."></video>` | `<video...><track kind="captions"...></video>` |
 | **Autoplay Violation** | `<video autoplay ...>` | `<video ...>` (Autoplay removed) |

@@ -140,6 +140,15 @@ export class AuditService {
                 // Fix: Append a Transcript placeholder after <audio>
                 newCode = newCode.replace(/(<\/audio>)/gi, '$1\n<details class="mt-2">\n  <summary class="cursor-pointer text-blue-600">Read Transcript</summary>\n  <div class="p-2 bg-gray-50 border rounded">\n    <p>[Insert full transcript here...]</p>\n  </div>\n</details>');
                 break;
+
+            case 'ai-mouse-only-interaction':
+                // Fix: Convert <div/span (click)> to <button type="button" (click)>
+                // We reuse logic similar to 'prefer-native-button' but target (click) specifically
+                newCode = newCode.replace(/<(div|span|p|section)\s+([^>]*?)(\(click\)|onclick)=["']([^"']*)["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, eventName, handler, after, content) => {
+                    let attrs = (before + ` ${eventName}="${handler}" ` + after).replace(/\s+/g, ' ').trim();
+                    return `<button type="button" ${attrs}>${content}</button>`;
+                });
+                break;
         }
 
         return newCode;
@@ -179,10 +188,7 @@ export class AuditService {
 
         // Rule: Missing Skip Link
         if (/<header/i.test(code)) {
-            // Check if there is a link that looks like a skip link inside the header or just before nav
-            // Simplistic check: look for <a> with "skip" in text or href starting with #
             const hasSkipLink = /<a\s+[^>]*href=["']#[^"']+["'][^>]*>.*?skip.*?<\/a>/is.test(code);
-
             if (!hasSkipLink) {
                 issues.push({
                     id: `custom-missing-skip-link-${Date.now()}-${Math.random()}`,
@@ -214,14 +220,12 @@ export class AuditService {
             const typeMatcher = inputTag.match(/type=["'](email|tel|password|text)["']/i);
             const type = typeMatcher ? typeMatcher[1].toLowerCase() : 'text';
 
-            // Only flag strictly required fields or if it looks clearly like PII (name/email attribute)
             const isStrictType = ['email', 'tel', 'password'].includes(type);
             const looksLikePII = /name=["'](name|email|phone|tel|address)["']/i.test(inputTag);
 
             if ((isStrictType || looksLikePII) && !inputTag.includes('autocomplete')) {
                 issues.push({
                     id: `custom-autocomplete-${Date.now()}-${Math.random()}`,
-                    // Use 'ai-form-autocomplete' so the checker enables the Auto-Fix button!
                     ruleId: 'ai-form-autocomplete',
                     severity: 'medium',
                     message: `Input type '${type}' is missing the 'autocomplete' attribute (WCAG 1.3.5).`,
@@ -231,12 +235,11 @@ export class AuditService {
         }
 
         // Rule: Video Missing Captions (<track>)
-        // Matches <video ...> that does NOT contain <track ... kind="captions|subtitles">
         const videoRegex = /<video[^>]*>(?![\s\S]*?<track[^>]*kind=["'](captions|subtitles)["'])[\s\S]*?<\/video>/gi;
         if (videoRegex.test(code)) {
             issues.push({
                 id: `custom-video-captions-${Date.now()}-${Math.random()}`,
-                ruleId: 'ai-media-captions', // Use 'ai-' prefix to enable Auto-Fix
+                ruleId: 'ai-media-captions',
                 severity: 'high',
                 message: 'Video element is missing captions (<track>). Users with hearing impairments cannot access the content.',
                 suggestion: 'Add a <track kind="captions" src="..."> element inside the video tag.'
@@ -248,7 +251,7 @@ export class AuditService {
         if (audioRegex.test(code) && !code.match(/transcript/i)) {
             issues.push({
                 id: `custom-audio-transcript-${Date.now()}-${Math.random()}`,
-                ruleId: 'ai-media-transcript', // Changed to 'ai-' to enable Auto-Fix
+                ruleId: 'ai-media-transcript',
                 severity: 'medium',
                 message: 'Audio element detected. Ensure a text transcript is available nearby.',
                 suggestion: 'Provide a link to a full text transcript or include it in a <details> block.'
@@ -260,11 +263,29 @@ export class AuditService {
         if (autoplayRegex.test(code)) {
             issues.push({
                 id: `custom-media-autoplay-${Date.now()}-${Math.random()}`,
-                ruleId: 'ai-media-autoplay', // Auto-Fix can remove autoplay
+                ruleId: 'ai-media-autoplay',
                 severity: 'high',
                 message: 'Media element uses "autoplay". This can be disruptive and cause accessibility issues.',
                 suggestion: 'Remove "autoplay" or ensure controls are present to pause it immediately.'
             });
+        }
+
+        // Rule: Mouse-Only Interaction (Click without Keyboard)
+        const mouseOnlyRegex = /<(div|span|p|i|section|article)[^>]*?(\s(onclick|\(click\))=)/gi;
+        let mouseMatch;
+        while ((mouseMatch = mouseOnlyRegex.exec(code)) !== null) {
+            const rawTag = mouseMatch[0];
+            const hasKeyboard = /(\(keydown\)|\(keyup\)|onkeydown|onkeyup)/i.test(rawTag);
+
+            if (!hasKeyboard) {
+                issues.push({
+                    id: `custom-mouse-only-${Date.now()}-${Math.random()}`,
+                    ruleId: 'ai-mouse-only-interaction',
+                    severity: 'high',
+                    message: 'Interactive element missing keyboard support. Requires (keydown) or native button.',
+                    suggestion: 'Change this element to a <button> or add (keydown.enter) handler.'
+                });
+            }
         }
 
         return issues;
