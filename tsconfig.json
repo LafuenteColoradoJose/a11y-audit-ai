@@ -22,6 +22,9 @@
     "strictTemplates": true
   },
   "files": [],
+  "exclude": [
+    "api"
+  ],
   "references": [
     {
       "path": "./tsconfig.app.json"

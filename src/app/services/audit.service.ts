@@ -1,8 +1,7 @@
-import { Injectable } from '@angular/core';
-import { Observable, from, map, of } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, from, map, firstValueFrom } from 'rxjs';
 import axe from 'axe-core';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { environment } from '../../environments/environment';
 
 export interface AuditIssue {
     id: string;
@@ -16,6 +15,7 @@ export interface AuditIssue {
     providedIn: 'root'
 })
 export class AuditService {
+    private http = inject(HttpClient);
 
 
     /**
@@ -40,49 +40,21 @@ export class AuditService {
      * Returns the modified code.
      */
     async applyFix(code: string, issue: AuditIssue): Promise<string> {
-        if (environment.geminiApiKey && environment.geminiApiKey !== 'YOUR_API_KEY_HERE') {
-            try {
-                return await this.fixWithGemini(code, issue);
-            } catch (error) {
-                console.error('Gemini fix failed, falling back to Regex', error);
-                return this.applyRegexFix(code, issue);
-            }
+        // Option 1: Try to fix via our secure Backend API (Gemini)
+        try {
+            // We use fetch purely to avoid Observable conversion for this simple async task,
+            // but you could use this.http.post with firstValueFrom too.
+            // Using relative path '/api/fix' works automatically with Vercel or local proxy.
+            const response = await firstValueFrom(
+                this.http.post<{ fixedCode: string }>('/api/fix', { code, issue })
+            );
+            console.log('🔮 Backend response (Gemini Fix):', response); // Debug Log
+            return response.fixedCode;
+        } catch (error) {
+            console.warn('Backend fix failed (offline or error), falling back to Regex rules.', error);
+            // Option 2: Fallback to local Regex if backend fails
+            return this.applyRegexFix(code, issue);
         }
-        return this.applyRegexFix(code, issue);
-    }
-
-    private async fixWithGemini(code: string, issue: AuditIssue): Promise<string> {
-        const genAI = new GoogleGenerativeAI(environment.geminiApiKey);
-        // Use gemini-1.5-flash as 'gemini-pro' is sometimes deprecated on free tier
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const prompt = `
-        You are an expert in Web Accessibility (WCAG).
-        Fix the following accessibility issue in the provided HTML/Angular code:
-        
-        Issue: "${issue.message}"
-        Suggestion: "${issue.suggestion}"
-        Rule ID: "${issue.ruleId}"
-        
-        Current Code:
-        ${code}
-        
-        Instructions:
-        1. return ONLY the corrected code.
-        2. Do not add markdown code blocks (backticks).
-        3. Do not add explanations.
-        4. Preserve formatting as much as possible.
-        5. If you cannot fix it, return the original code.
-        `;
-
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        let text = response.text();
-
-        // Clean up any markdown code blocks if the model ignored instructions
-        text = text.replace(/^```html\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '');
-
-        return text.trim();
     }
 
     private applyRegexFix(code: string, issue: AuditIssue): string {
