@@ -162,8 +162,9 @@ export class CheckerComponent {
   isFixing = signal<string | null>(null); // Store the ID of the issue being fixed
 
   canFix(issue: AuditIssue): boolean {
-    // We can expand this list if Gemini is active, but for now let's keep the "known rule" set
-    // plus allow Gemini to try its best on these.
+    // Enable Auto-Fix for AI-detected issues (which start with 'ai-') 
+    if (issue.ruleId.startsWith('ai-')) return true;
+
     return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured'].includes(issue.ruleId);
   }
 

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, from, map, firstValueFrom } from 'rxjs';
+import { Observable, from, map, firstValueFrom, forkJoin, of, catchError } from 'rxjs';
 import axe from 'axe-core';
 
 export interface AuditIssue {
@@ -22,12 +22,31 @@ export class AuditService {
      * Analyzes the code using axe-core for real WCAG validation and custom checks.
      */
     analyzeCode(code: string, level: string): Observable<AuditIssue[]> {
-        return from(this.runAxeAudit(code, level)).pipe(
+        // Run Axe (Local Standard)
+        const axeCheck$ = from(this.runAxeAudit(code, level)).pipe(
             map(axeResults => {
                 const axeIssues = this.mapAxeToAuditIssues(axeResults);
                 const customIssues = this.runCustomAudit(code);
                 return [...axeIssues, ...customIssues];
             })
+        );
+
+        // Run Gemini (AI Deep Scan)
+        const aiCheck$ = this.http.post<{ issues: AuditIssue[] }>('/api/analyze', { code }).pipe(
+            map(res => res.issues.map(i => ({
+                ...i,
+                ruleId: i.ruleId.startsWith('ai-') ? i.ruleId : `ai-${i.ruleId}`,
+                id: `ai-${Date.now()}-${Math.random()}`
+            }))),
+            catchError(err => {
+                console.warn('AI Analysis failed (offline or quota), skipping.', err);
+                return of([] as AuditIssue[]);
+            })
+        );
+
+        // Merge both results
+        return forkJoin([axeCheck$, aiCheck$]).pipe(
+            map(([standardIssues, aiIssues]) => [...standardIssues, ...aiIssues])
         );
     }
 
@@ -48,7 +67,6 @@ export class AuditService {
             const response = await firstValueFrom(
                 this.http.post<{ fixedCode: string }>('/api/fix', { code, issue })
             );
-            console.log('🔮 Backend response (Gemini Fix):', response); // Debug Log
             return response.fixedCode;
         } catch (error) {
             console.warn('Backend fix failed (offline or error), falling back to Regex rules.', error);
@@ -171,6 +189,30 @@ export class AuditService {
                 message: 'Avoid "outline: none" or "outline: 0". It makes the element inaccessible to keyboard users.',
                 suggestion: 'Replace with "outline: auto 5px -webkit-focus-ring-color" or a visible custom outline.'
             });
+        }
+
+        // Rule: Input Missing Autocomplete (WCAG 1.3.5)
+        const inputRegex = /<input[^>]*type=["'](email|tel|password|text)["'][^>]*>/gi;
+        let inputMatch;
+        while ((inputMatch = inputRegex.exec(code)) !== null) {
+            const inputTag = inputMatch[0];
+            const typeMatcher = inputTag.match(/type=["'](email|tel|password|text)["']/i);
+            const type = typeMatcher ? typeMatcher[1].toLowerCase() : 'text';
+
+            // Only flag strictly required fields or if it looks clearly like PII (name/email attribute)
+            const isStrictType = ['email', 'tel', 'password'].includes(type);
+            const looksLikePII = /name=["'](name|email|phone|tel|address)["']/i.test(inputTag);
+
+            if ((isStrictType || looksLikePII) && !inputTag.includes('autocomplete')) {
+                issues.push({
+                    id: `custom-autocomplete-${Date.now()}-${Math.random()}`,
+                    // Use 'ai-form-autocomplete' so the checker enables the Auto-Fix button!
+                    ruleId: 'ai-form-autocomplete',
+                    severity: 'medium',
+                    message: `Input type '${type}' is missing the 'autocomplete' attribute (WCAG 1.3.5).`,
+                    suggestion: `Add autocomplete="..." attribute appropriately (e.g. autocomplete="${type}").`
+                });
+            }
         }
 
         return issues;
