@@ -21,17 +21,14 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 ## ✨ Key Features
 
--   **🔍 Deep Accessibility Analysis**: valid your code against real-world WCAG rules using `axe-core`.
--   **🤖 Powered by Gemini AI**: Uses Google's LLM to understand your code's context and generate smart fixes (e.g., writing meaningful `alt` text or restructuring complex components).
--   **🪄 Smart Auto-Fix (Hybrid)**:
-    -   **AI Mode**: Attempts to fix any issue using Generative AI for the best possible result.
-    -   **Regex Fallback**: Instant, offline-capable fixes for common patterns if AI is unavailable.
-    -   **Semantic Elements**: Converts `<a role="button">` to native `<button>` elements (Best Practice).
-    -   **Focus Management**: Corrects positive `tabindex` values to `0` and removes `outline: none` to ensure keyboard accessibility.
-    -   **Navigation**: Automatically injects "Skip to main content" links in `<header>` areas.
-    -   **Missing Attributes**: Injects `alt` text for images and `aria-label` for buttons/inputs suitable for screen readers.
-    -   **ARIA Misuse**: Detects and fixes critical errors like `aria-hidden="true"` on focusable elements.
--   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators to enforce HTML semantics.
+-   **🔍 Hybrid Accessibility Analysis**: Combines **axe-core** (standard rules) with **Gemini AI** (semantic understanding) to detect complex issues like foreign languages without lang tags, ambiguous link text, or confusing form structures.
+-   **🤖 Serverless AI Backend**: Securely processes code using Google's Gemini models (Flash 2.0/Pro) via Vercel Edge Functions, keeping your API keys safe.
+-   **🪄 Smart Auto-Fix (Intelligent)**:
+    -   **AI Mode**: Uses Generative AI to rewrite code, fixing specific issues like `tabindex`, `aria-` misuse, or missing `autocomplete` attributes.
+    -   **Legacy Fallback**: Instant, offline-capable fixes for simple patterns if AI is unreachable.
+    -   **Semantic Upgrades**: Converts `<div role="form">` to `<form>`, `<a role="button">` to `<button>`, and ensures proper fieldset/legend grouping.
+    -   **Form Mastery**: Enforces WCAG 1.3.5 compliance by checking and fixing missing `autocomplete` attributes on critical fields (email, tel, etc.).
+-   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
     -   "Clear Editor" functionality for quick testing.
@@ -40,18 +37,20 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 ## 🛠️ Tech Stack
 
--   **Framework**: [Angular v21](https://angular.io/) (Standalone Components, Signals, New Control Flow)
--   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
--   **AI Model**: [Google Gemini Pro](https://deepmind.google/technologies/gemini/) (via Generative AI SDK)
+-   **Framework**: [Angular v19+](https://angular.io/) (Standalone Components, Signals, New Control Flow)
+-   **Backend**: [Vercel Serverless Functions](https://vercel.com/docs/functions) (TypeScript)
+-   **AI Model**: [Google Gemini 2.0 Flash / Pro](https://deepmind.google/technologies/gemini/) (via REST API)
 -   **Core Engine**: [axe-core](https://www.deque.com/axe/)
--   **Editor**: [PrismJS](https://prismjs.com/) for syntax highlighting
+-   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+-   **Editor**: [PrismJS](https://prismjs.com/)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
--   Node.js (v18 or higher recommended)
--   npm (v10+ recommended)
+-   Node.js (v18 or higher)
+-   npm (v10+)
+-   [Vercel CLI](https://vercel.com/docs/cli) (`npm i -g vercel`)
 
 ### Installation
 
@@ -66,25 +65,23 @@ Whether you are auditing a legacy codebase or building new components, this tool
     npm install
     ```
 
-3.  **Configure API Key (Optional for AI features)**
+3.  **Configure API Key (Securely)**
     *   Get a free API Key from [Google AI Studio](https://aistudio.google.com/).
-    *   Open `src/environments/environment.development.ts`.
-    *   Paste your key:
-        ```typescript
-        export const environment = {
-          production: false,
-          geminiApiKey: 'YOUR_API_KEY_HERE'
-        };
+    *   Create a file named `.env.local` in the root directory.
+    *   Add your key:
+        ```bash
+        GEMINI_API_KEY=AIzaSy...YourKeyHere...
         ```
-    *   *Note: If no key is provided, the tool falls back to Rule-based (Regex) fixes.*
+    *   *Note: This file is git-ignored to keep your secrets safe.*
 
-4.  **Start the development server**
+4.  **Start the Development Server**
+    Use Vercel CLI to run both the Angular frontend and the Serverless API:
     ```bash
-    npm start
+    vercel dev
     ```
 
-4.  **Open the Application**
-    Navigate to `http://localhost:4200/` in your browser.
+5.  **Open the Application**
+    Navigate to `http://localhost:3000/` (default Vercel port) in your browser.
 
 ## 💡 Usage Guide
 
