@@ -112,6 +112,7 @@ Whether you are auditing a legacy codebase or building new components, this tool
 | Issue | Original Code | Auto-Fixed Code |
 | :--- | :--- | :--- |
 | **Mouse-Only Interaction** | `<div (click)="save()">Save</div>` | `<button type="button" (click)="save()">Save</button>` |
+| **Absolute Font Size** | `font-size: 16px;` | `font-size: 1rem;` (Suggestion) |
 | **Missing Autocomplete** | `<input type="email">` | `<input autocomplete="email" type="email">` |
 | **Video Captions** | `<video src="..."></video>` | `<video...><track kind="captions"...></video>` |
 | **Autoplay Violation** | `<video autoplay ...>` | `<video ...>` (Autoplay removed) |
