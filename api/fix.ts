@@ -51,9 +51,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         STRICT INSTRUCTIONS:
         1. Return ONLY the accessible HTML code.
-        2. FIX the issue directly. Do not return the original code if it violates the rule.
-        3. For 'minimize-tabindex' or positive tabindex: ALWAYS change it to tabindex="0" or remove it if not needed.
-        4. No markdown, no comments, no explanations.
+        - If the issue is about "Language of parts", wrap the text in <span lang="...">.
+    - If the issue is about "tabindex" being positive (1, 2, 3...), change it to "0" or remove it if not needed.
+    - If the issue is about "missing-form-label", wrap inputs in <label> or add id/for attributes.
+    - If the issue is about "autoplay", REMOVE the 'autoplay' attribute completely.
+    - If the issue is about missing captions/track, INSERT a <track kind="captions" src="subtitles.vtt" srclang="en" label="English"> inside the video tag.
+    - If the issue is about missing autocomplete, add autocomplete="[field-type]".
         `;
 
         // Use direct REST API to avoid ESM/CJS module issues with the SDK

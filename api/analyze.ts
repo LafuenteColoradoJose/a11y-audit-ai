@@ -47,6 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
            - You MUST REPORT usage of <div role="form">. Suggest using <form> instead.
            - Labels not programmatically connected to inputs (for/id match).
            - Missing fieldset/legend for related radio buttons or checkboxes.
+        6. MULTIMEDIA (WCAG 1.2):
+           - <video> elements MUST have a <track kind="captions">.
+           - <video> elements SHOULD have <track kind="descriptions"> for blind users.
+           - <audio> elements MUST have a text transcript mentioned.
+           - NO 'autoplay' on media elements without user controls.
         
         INPUT CODE:
         ${code}
@@ -61,6 +66,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 "severity": "medium", 
                 "message": "Input type 'email' is missing the 'autocomplete' attribute (WCAG 1.3.5).",
                 "suggestion": "Add autocomplete='email'."
+            },
+            {
+                "ruleId": "ai-media-captions",
+                "severity": "high",
+                "message": "Video element is missing captions (<track>).",
+                "suggestion": "Add <track kind='captions' src='...' label='English'>"
             }
         ]
         If no issues found, return [].

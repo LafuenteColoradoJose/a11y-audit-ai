@@ -125,6 +125,21 @@ export class AuditService {
                 // Fix: Replace 'outline: none' or 'outline: 0' with a visible focus ring.
                 newCode = newCode.replace(/outline:\s*(none|0)\s*;?/gi, 'outline: auto 5px -webkit-focus-ring-color;');
                 break;
+
+            case 'ai-media-autoplay':
+                // Fix: Remove 'autoplay' attribute
+                newCode = newCode.replace(/\s*autoplay(=["'][^"']*["'])?/gi, '');
+                break;
+
+            case 'ai-media-captions':
+                // Fix: Inject <track> inside <video>
+                newCode = newCode.replace(/(<video[^>]*>)/gi, '$1\n  <track kind="captions" src="captions.vtt" srclang="en" label="English Captions">');
+                break;
+
+            case 'ai-media-transcript':
+                // Fix: Append a Transcript placeholder after <audio>
+                newCode = newCode.replace(/(<\/audio>)/gi, '$1\n<details class="mt-2">\n  <summary class="cursor-pointer text-blue-600">Read Transcript</summary>\n  <div class="p-2 bg-gray-50 border rounded">\n    <p>[Insert full transcript here...]</p>\n  </div>\n</details>');
+                break;
         }
 
         return newCode;
@@ -213,6 +228,43 @@ export class AuditService {
                     suggestion: `Add autocomplete="..." attribute appropriately (e.g. autocomplete="${type}").`
                 });
             }
+        }
+
+        // Rule: Video Missing Captions (<track>)
+        // Matches <video ...> that does NOT contain <track ... kind="captions|subtitles">
+        const videoRegex = /<video[^>]*>(?![\s\S]*?<track[^>]*kind=["'](captions|subtitles)["'])[\s\S]*?<\/video>/gi;
+        if (videoRegex.test(code)) {
+            issues.push({
+                id: `custom-video-captions-${Date.now()}-${Math.random()}`,
+                ruleId: 'ai-media-captions', // Use 'ai-' prefix to enable Auto-Fix
+                severity: 'high',
+                message: 'Video element is missing captions (<track>). Users with hearing impairments cannot access the content.',
+                suggestion: 'Add a <track kind="captions" src="..."> element inside the video tag.'
+            });
+        }
+
+        // Rule: Audio Missing Transcript Warning
+        const audioRegex = /<audio[^>]*>/gi;
+        if (audioRegex.test(code) && !code.match(/transcript/i)) {
+            issues.push({
+                id: `custom-audio-transcript-${Date.now()}-${Math.random()}`,
+                ruleId: 'ai-media-transcript', // Changed to 'ai-' to enable Auto-Fix
+                severity: 'medium',
+                message: 'Audio element detected. Ensure a text transcript is available nearby.',
+                suggestion: 'Provide a link to a full text transcript or include it in a <details> block.'
+            });
+        }
+
+        // Rule: Autoplay Usage
+        const autoplayRegex = /<(video|audio)[^>]*autoplay[^>]*>/gi;
+        if (autoplayRegex.test(code)) {
+            issues.push({
+                id: `custom-media-autoplay-${Date.now()}-${Math.random()}`,
+                ruleId: 'ai-media-autoplay', // Auto-Fix can remove autoplay
+                severity: 'high',
+                message: 'Media element uses "autoplay". This can be disruptive and cause accessibility issues.',
+                suggestion: 'Remove "autoplay" or ensure controls are present to pause it immediately.'
+            });
         }
 
         return issues;
