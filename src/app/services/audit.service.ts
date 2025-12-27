@@ -288,6 +288,38 @@ export class AuditService {
             }
         }
 
+        // Rule: Hardcoded Colors (CSS/Style)
+        // Detects hex/rgb colors that are NOT custom properties definitions (e.g. --color: #fff is fine, but color: #fff is not)
+        // We look for "property: #hex" or "property: rgb(...)" but try to exclude "--variable:"
+        const hardcodedColorRegex = /(?<!-)\b(color|background|background-color|border|border-color|fill|stroke)\s*:\s*(#[0-9a-fA-F]{3,6}|rgb\([^)]+\)|[a-z]+)\b/gi;
+        let colorMatch;
+
+        // We limit matches to avoid hundreds of warnings in a full CSS file
+        let colorWarningsCount = 0;
+        const seenColors = new Set<string>();
+
+        while ((colorMatch = hardcodedColorRegex.exec(code)) !== null && colorWarningsCount < 5) {
+            const fullMatch = colorMatch[0];
+            const property = colorMatch[1];
+            const value = colorMatch[2];
+
+            // Filter out common keywords that are adaptable or safe
+            if (['inherit', 'transparent', 'currentColor', 'none', 'initial', 'auto'].includes(value.toLowerCase())) continue;
+            if (seenColors.has(value)) continue;
+
+            seenColors.add(value);
+            colorWarningsCount++;
+
+            issues.push({
+                id: `custom-hardcoded-color-${Date.now()}-${Math.random()}`,
+                // Removed 'ai-' prefix to disable Auto-Fix button as color decisions should be manual
+                ruleId: 'hardcoded-color',
+                severity: 'medium', // Not high because it might be valid branding, but worth warning
+                message: `Hardcoded color '${value}' detected for '${property}'. This prevents users from using High Contrast Mode or Dark Mode preferences.`,
+                suggestion: `Use CSS Variables (var(--color-name)) or system colors (CanvasText, LinkText) to better support user preferences.`
+            });
+        }
+
         return issues;
     }
 

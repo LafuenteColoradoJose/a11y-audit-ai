@@ -35,6 +35,8 @@ Whether you are auditing a legacy codebase or building new components, this tool
     -   **SPA / Interaction**:
         -   **Mouse-Only Events**: Detects `<div (click)>` or `onclick` without keyboard support.
         -   **Auto-Conversion**: Automatically transforms non-semantic interactive elements into native `<button>` tags, preserving event handlers.
+    -   **Color Consistency**:
+        -   **Hardcoded Colors**: Warns against using fixed HEX/RGB values in styles, promoting CSS Variables for Dark Mode/High Contrast support.
 -   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
