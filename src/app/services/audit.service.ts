@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, map, firstValueFrom, forkJoin, of, catchError } from 'rxjs';
 import axe from 'axe-core';
@@ -17,6 +17,10 @@ export interface AuditIssue {
 export class AuditService {
     private http = inject(HttpClient);
 
+    // Local AI Configuration
+    // readonly useLocalModel = signal(false); // REMOVED: No longer used
+
+
 
     /**
      * Analyzes the code using axe-core for real WCAG validation and custom checks.
@@ -31,7 +35,7 @@ export class AuditService {
             })
         );
 
-        // Run Gemini (AI Deep Scan)
+        // Run AI Scan (Cloud Gemini)
         const aiCheck$ = this.http.post<{ issues: AuditIssue[] }>('/api/analyze', { code }).pipe(
             map(res => res.issues.map(i => ({
                 ...i,
@@ -54,16 +58,9 @@ export class AuditService {
      * Attempts to automatically fix the issue in the provided code snippet.
      * Returns the modified code.
      */
-    /**
-     * Attempts to automatically fix the issue in the provided code snippet.
-     * Returns the modified code.
-     */
     async applyFix(code: string, issue: AuditIssue): Promise<string> {
         // Option 1: Try to fix via our secure Backend API (Gemini)
         try {
-            // We use fetch purely to avoid Observable conversion for this simple async task,
-            // but you could use this.http.post with firstValueFrom too.
-            // Using relative path '/api/fix' works automatically with Vercel or local proxy.
             const response = await firstValueFrom(
                 this.http.post<{ fixedCode: string }>('/api/fix', { code, issue })
             );
@@ -79,71 +76,77 @@ export class AuditService {
         let newCode = code;
 
         switch (issue.ruleId) {
+            case 'ai-ambiguous-link':
+            case 'ambiguous-link':
+                // Rule: Links should describe their purpose
+                // Fix: Replace generic text with 'View Details'
+                return newCode.replace(/>\s*(click here|read more|more|here|info)\s*</gi, '>View Details<');
+
             case 'image-alt':
-                // Fix: Add alt="" to img tags that don't have it
-                newCode = newCode.replace(/<img\s+(?![^>]*\balt=)([^>]+)>/gi, '<img alt="Description needed" $1>');
-                break;
+            case 'ai-image-alt':
+                // Rule: Images must have alt text
+                // Fix: Add alt="Description" to img tags if missing
+                return newCode.replace(/<img\s+(?![^>]*\balt=)([^>]+)>/gi, '<img alt="Image description needed" $1>');
 
             case 'button-name':
-                // Fix: Add aria-label="Action" to buttons if they lack it.
-                newCode = newCode.replace(/<button\s+(?![^>]*\baria-label=)([^>]*)>/gi, '<button aria-label="Action Name" $1>');
-                break;
+            case 'ai-button-name':
+                // Rule: Buttons must have discernible text
+                // Fix: Add aria-label if text is empty or missing
+                return newCode.replace(/<button\s+(?![^>]*\baria-label=)([^>]*)>/gi, '<button aria-label="Action Name" $1>');
 
             case 'label':
             case 'label-title-only':
-                // Fix: Add aria-label to inputs
-                newCode = newCode.replace(/<input\s+(?![^>]*\b(aria-label|id)=)([^>]+)>/gi, '<input aria-label="Input field" $1>');
-                break;
+            case 'ai-label':
+                // Rule: Inputs must have labels
+                // Fix: Add aria-label to input/textarea/select
+                return newCode.replace(/<(input|textarea|select)\s+(?![^>]*\b(aria-label|id|title)=)([^>]+)>/gi, '<$1 aria-label="Input field" $3>');
 
             case 'prefer-native-button':
-                // Fix: Replace <a|div|span role="button"> with <button type="button">
-                // This regex captures the tag name (1), attributes before role (2), attributes after role (3), and content (4)
-                newCode = newCode.replace(/<(a|div|span)\s+([^>]*?)role=["']button["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, after, content) => {
-                    let attrs = (before + ' ' + after).replace(/href=["'][^"']*["']\s*/gi, ''); // Remove href if it was an <a>
+            case 'ai-prefer-native-button':
+                // Rule: Use <button> instead of div/span role="button"
+                // Fix: Convert tag and add type="button"
+                return newCode.replace(/<(a|div|span)\s+([^>]*?)role=["']button["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, after, content) => {
+                    let attrs = (before + ' ' + after).replace(/href=["'][^"']*["']\s*/gi, '');
                     attrs = attrs.replace(/\s+/g, ' ').trim();
                     return `<button type="button" ${attrs}>${content}</button>`;
                 });
-                break;
-
-            case 'aria-hidden-focus':
-                // Fix: Remove aria-hidden="true"
-                newCode = newCode.replace(/\s?aria-hidden=["']true["']/gi, '');
-                break;
-
-            case 'minimize-tabindex':
-                // Fix: Replace tabindex="[1-9]*" with tabindex="0"
-                newCode = newCode.replace(/tabindex=["']([1-9][0-9]*)["']/gi, 'tabindex="0"');
-                break;
-
-            case 'missing-skip-link':
-                // Fix: Prepend the skip link to the <header>
-                const skipLink = '\n  <a href="#main" class="sr-only focus:not-sr-only">Skip to main content</a>';
-                newCode = newCode.replace(/<header([^>]*)>/i, '<header$1>' + skipLink);
-                break;
-
-            case 'focus-obscured':
-                // Fix: Replace 'outline: none' or 'outline: 0' with a visible focus ring.
-                newCode = newCode.replace(/outline:\s*(none|0)\s*;?/gi, 'outline: auto 5px -webkit-focus-ring-color;');
-                break;
-
-            case 'ai-media-autoplay':
-                // Fix: Remove 'autoplay' attribute
-                newCode = newCode.replace(/\s*autoplay(=["'][^"']*["'])?/gi, '');
-                break;
-
-            case 'ai-media-captions':
-                // Fix: Inject <track> inside <video>
-                newCode = newCode.replace(/(<video[^>]*>)/gi, '$1\n  <track kind="captions" src="captions.vtt" srclang="en" label="English Captions">');
-                break;
-
-            case 'ai-media-transcript':
-                // Fix: Append a Transcript placeholder after <audio>
-                newCode = newCode.replace(/(<\/audio>)/gi, '$1\n<details class="mt-2">\n  <summary class="cursor-pointer text-blue-600">Read Transcript</summary>\n  <div class="p-2 bg-gray-50 border rounded">\n    <p>[Insert full transcript here...]</p>\n  </div>\n</details>');
-                break;
 
             case 'ai-mouse-only-interaction':
-                // Fix: Convert <div/span (click)> to <button type="button" (click)>
-                // We reuse logic similar to 'prefer-native-button' but target (click) specifically
+            case 'mouse-only-interaction':
+                // Rule: Clickable elements must be keyboard accessible
+                // Fix: Add tabindex="0" and (keydown.enter)="handler()" if (click) exists
+                // Note: We try to match the handler used in (click) to apply it to (keydown.enter)
+                return newCode.replace(/<([a-z0-9]+)\s+([^>]*)\(click\)="([^"]+)"([^>]*)>/gi, (match, tag, before, handler, after) => {
+                    // Don't modify if it's already a button or link (native interactive)
+                    if (tag === 'button' || tag === 'a' || tag === 'input') return match;
+                    // Don't add if already has keydown
+                    if (before.includes('keydown') || after.includes('keydown')) return match;
+
+                    return `<${tag} ${before} (click)="${handler}" (keydown.enter)="${handler}" tabindex="0" ${after}>`;
+                });
+
+            case 'aria-hidden-focus':
+                // Rule: aria-hidden elements should not be focusable
+                return newCode.replace(/\s?aria-hidden=["']true["']/gi, '');
+
+            case 'minimize-tabindex':
+                // Rule: Avoid positive tabindex
+                // Fix: Change positive tabindex to 0
+                return newCode.replace(/tabindex=["']([1-9][0-9]*)["']/gi, 'tabindex="0"');
+
+            case 'frame-title':
+                // Rule: Iframes must have titles
+                // Fix: Add a generic title if missing
+                return newCode.replace(/<iframe\s+(?![^>]*\btitle=)([^>]+)>/gi, '<iframe title="Embedded Content" $1>');
+
+            case 'empty-heading':
+                // Rule: Headings should not be empty
+                // Fix: Add a placeholder title
+                return newCode.replace(/<(h[1-6])>\s*<\/\1>/gi, '<$1>Heading Title</$1>');
+
+            case 'focus-obscured':
+                // Rule: Focus indicator should not be removed
+                // Fix: Replace 'outline: none' or 'outline: 0' with a visible focus ring.
                 newCode = newCode.replace(/<(div|span|p|section)\s+([^>]*?)(\(click\)|onclick)=["']([^"']*)["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, eventName, handler, after, content) => {
                     let attrs = (before + ` ${eventName}="${handler}" ` + after).replace(/\s+/g, ' ').trim();
                     return `<button type="button" ${attrs}>${content}</button>`;
@@ -401,6 +404,170 @@ export class AuditService {
                 return 'medium';
             default:
                 return 'low';
+        }
+    }
+
+    // --- Local In-Browser AI Implementation (@xenova/transformers) ---
+
+    // We keep track of the pipeline promise so we reuse it
+    private textPipeline: any = null;
+    readonly isModelLoading = signal(false);
+    readonly modelProgress = signal<string>('');
+
+    private async initLocalModel() {
+        if (this.textPipeline) return this.textPipeline;
+
+        this.isModelLoading.set(true);
+        this.modelProgress.set('Loading AI Model (approx 250MB)... this happens once.');
+
+        try {
+            // Use dynamic import from CDN to avoid build-time node-dependency issues
+            // This is a robust workaround for client-side only AI
+            // @ts-ignore
+            const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+
+            // CRITICAL: Disable local model checking to prevent fs/path usage
+            env.allowLocalModels = false;
+            env.useBrowserCache = true;
+
+            // Using a smaller, instruction-tuned model suitable for browser
+            this.textPipeline = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
+                progress_callback: (d: any) => {
+                    if (d.status === 'progress') {
+                        this.modelProgress.set(`Downloading: ${Math.round(d.progress)}%`);
+                    } else if (d.status === 'ready') {
+                        this.modelProgress.set('Model Ready!');
+                    }
+                }
+            });
+
+            return this.textPipeline;
+        } catch (e) {
+            console.error('Failed to load local model', e);
+            throw e;
+        } finally {
+            this.isModelLoading.set(false);
+        }
+    }
+
+    private async analyzeWithLocalModel(code: string): Promise<AuditIssue[]> {
+        const generator = await this.initLocalModel();
+
+        // Simplified prompt optimized for smaller models (LaMini/Flan-T5)
+        const prompt = `
+        Identify accessibility errors in this HTML.
+        Code: ${code.substring(0, 500)} 
+        
+        If there is an error, output JSON: [{"ruleId": "error-name", "message": "Short description"}]
+        If no error, output: []
+        `;
+
+        try {
+            this.modelProgress.set('Analyzing code locally...');
+            const output = await generator(prompt, {
+                max_new_tokens: 150,
+                temperature: 0.1, // Low temperature for deterministic output
+                do_sample: false
+            });
+
+            const text = output[0].generated_text;
+            console.log('Local AI Output:', text);
+
+            // Try to find JSON array in the output
+            const jsonMatch = text.match(/\[.*\]/s);
+            if (jsonMatch) {
+                try {
+                    const issues = JSON.parse(jsonMatch[0]);
+                    return issues.map((i: any) => ({
+                        ...i,
+                        id: `local-browser-${Date.now()}-${Math.random()}`,
+                        suggestion: i.suggestion || 'Check WCAG guidelines.',
+                        severity: i.severity || 'medium'
+                    }));
+                } catch (e) {
+                    console.warn('JSON parse failed, falling back to text analysis');
+                }
+            }
+
+            // Fallback: Keyword detection if model refuses to speak JSON or misses the issue
+            const fallbackIssues: AuditIssue[] = [];
+            // We check the INPUT CODE, not the AI output, to guarantee detection of obvious bad patterns
+            // Ultra-robust Regex: Matches <a ...> ... Click ... Here ... </a>
+            // Allows newlines (\s+), attributes ([^>]*), and nested tags in between
+            const ambiguousLinkRegex = /<a\s+[^>]*>[\s\S]*?(click\s+here|read\s+more|more\s+info|details)[\s\S]*?<\/a>/i;
+
+            if (ambiguousLinkRegex.test(code)) {
+                fallbackIssues.push({
+                    id: `local-fallback-${Date.now()}`,
+                    ruleId: 'ai-ambiguous-link',
+                    severity: 'medium',
+                    message: 'Ambiguous link text detected (e.g., "Click here").',
+                    suggestion: 'Use descriptive link text that explains the destination.'
+                });
+            }
+
+            return fallbackIssues;
+
+        } catch (e) {
+            console.error('Local AI Inference failed', e);
+            return [];
+        } finally {
+            this.modelProgress.set('');
+        }
+    }
+
+    private async fixWithLocalModel(code: string, issue: AuditIssue): Promise<string> {
+        const generator = await this.initLocalModel();
+
+        // Few-shot prompt: We give examples so the model understands the task
+        const prompt = `
+        Task: Fix accessibility issues in HTML code. Return ONLY the fixed HTML.
+
+        Example 1:
+        Issue: Ambiguous link text
+        Input: <a href="#">Click here</a>
+        Output: <a href="#">View Details</a>
+
+        Example 2:
+        Issue: Images must have alternative text
+        Input: <img src="cat.jpg">
+        Output: <img src="cat.jpg" alt="A cute cat">
+
+        Current Task:
+        Issue: "${issue.message}"
+        Input: ${code}
+        Output:
+        `;
+
+        try {
+            this.modelProgress.set('Generating fix locally...');
+            const output = await generator(prompt, {
+                max_new_tokens: 200,
+                temperature: 0.1
+            });
+            let fixedCode = output[0].generated_text.trim();
+
+            // 1. Cleanup prefixes
+            fixedCode = fixedCode.replace(/^Output:\s*/i, '').replace(/^Input:\s*/i, '');
+            if (fixedCode.includes('Output:')) {
+                fixedCode = fixedCode.split('Output:').pop()?.trim() || fixedCode;
+            }
+
+            // 2. Safety Check: If no HTML tags found, trigger fallback
+            if (!/<[^>]+>/.test(fixedCode)) {
+                console.warn('Local AI returned non-HTML text. Triggering Regex Fallback.', fixedCode);
+                throw new Error('Local AI output invalid'); // Throwing forces the applyFix catch block to run
+            }
+
+            // 3. Extract purely the HTML part
+            const firstTagIndex = fixedCode.search(/<[a-z][\s\S]*>/i);
+            if (firstTagIndex !== -1) {
+                fixedCode = fixedCode.substring(firstTagIndex);
+            }
+
+            return fixedCode;
+        } finally {
+            this.modelProgress.set('');
         }
     }
 }

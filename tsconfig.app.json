@@ -6,7 +6,15 @@
     "outDir": "./out-tsc/app",
     "types": [
       "node"
-    ]
+    ],
+    "paths": {
+      "sharp": [
+        "./src/app/empty.ts"
+      ],
+      "onnxruntime-node": [
+        "./src/app/empty.ts"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts"

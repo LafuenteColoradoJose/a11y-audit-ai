@@ -1,7 +1,10 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, EffectRef, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, switchMap, takeUntil } from 'rxjs/operators';
 import { AuditService, AuditIssue } from '../../services/audit.service';
 import { CodeEditorComponent } from '../../components/code-editor/code-editor.component';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-checker',
@@ -31,6 +34,7 @@ import { CodeEditorComponent } from '../../components/code-editor/code-editor.co
               <select
                 id="wcag-level"
                 [(ngModel)]="selectedLevel"
+                (change)="analyzeCode()"
                 class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:ring-zinc-700 dark:text-white"
               >
                 <option value="A">Level A (Essential)</option>
@@ -38,6 +42,10 @@ import { CodeEditorComponent } from '../../components/code-editor/code-editor.co
                 <option value="AAA">Level AAA (Strict)</option>
               </select>
             </div>
+
+            <!-- AI Model Settings: REMOVED (Local AI deprecated) -->
+
+
             <div class="flex items-end">
               <button
                 (click)="analyzeCode()"
@@ -68,7 +76,7 @@ import { CodeEditorComponent } from '../../components/code-editor/code-editor.co
               Source Code
             </label>
             <div class="flex-1 rounded-md overflow-hidden shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-700">
-               <app-code-editor [(code)]="codeSnippet" />
+               <app-code-editor [code]="codeSnippet()" (codeChange)="onCodeChange($event)" />
             </div>
           </div>
 
@@ -136,7 +144,7 @@ import { CodeEditorComponent } from '../../components/code-editor/code-editor.co
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CheckerComponent {
-  private auditService = inject(AuditService);
+  protected auditService = inject(AuditService);
 
   selectedLevel = signal('AA');
   codeSnippet = signal('<!-- Paste your element here -->\n<button>Click me</button>');
@@ -144,12 +152,34 @@ export class CheckerComponent {
   isAnalyzing = signal(false);
   hasAnalyzed = signal(false);
 
+  private codeChangeSubject = new Subject<string>();
+
+  constructor() {
+    // Setup automatic analysis debounce
+    this.codeChangeSubject.pipe(
+      debounceTime(2000), // Wait 2 seconds of inactivity
+      distinctUntilChanged(),
+      filter(code => code.length > 5) // Don't analyze empty/tiny code
+    ).subscribe(() => {
+      this.analyzeCode();
+    });
+  }
+
+  onCodeChange(newCode: string) {
+    this.codeSnippet.set(newCode);
+    this.codeChangeSubject.next(newCode);
+    // Reset analysis state while typing to indicate freshness
+    if (this.hasAnalyzed()) {
+      this.hasAnalyzed.set(false);
+    }
+  }
+
   analyzeCode() {
     if (!this.codeSnippet()) return;
 
     this.isAnalyzing.set(true);
-    this.hasAnalyzed.set(false);
-    this.results.set([]);
+    // Keep results visible while reloading to avoid flicker, or clear if you prefer
+    // this.results.set([]); 
 
     this.auditService.analyzeCode(this.codeSnippet(), this.selectedLevel())
       .subscribe((issues) => {

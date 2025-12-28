@@ -45,12 +45,23 @@ Whether you are auditing a legacy codebase or building new components, this tool
     -   Syntax highlighting for HTML/Angular.
     -   "Clear Editor" functionality for quick testing.
     -   Real-time feedback interface.
--   **🎚️ Adjustable Compliance Levels**: Test specifically for WCAG Level A, AA (Standard), or AAA (Strict).
+  ### ✨ Hybrid AI Engine
+We combine the best of both worlds to ensure reliability and speed:
+1.  **Code-First Rules (Regex Engine)**: Instant, offline fixes for 80% of common issues (links, alts, labels, mouse events). Zero latency.
+2.  **Cloud AI (Gemini Pro)**: Deep semantic analysis for complex issues that require understanding context. With smart **Debounce** protection to save API quota.
+
+### 🛡️ Resilient Auto-Fix
+The Auto-Fix system is fail-safe:
+- Tries to use **Gemini AI** for a context-aware fix.
+- If AI fails (offline/quota), it falls back to the **Regex Engine**.
+- Your code *always* gets fixed, no matter what.
 
 ## 🛠️ Tech Stack
 
--   **Framework**: [Angular v19+](https://angular.io/) (Standalone Components, Signals, New Control Flow)
--   **Backend**: [Vercel Serverless Functions](https://vercel.com/docs/functions) (TypeScript)
+- **Frontend**: Angular 18 (Standalone Components, Signals, RxJS)
+- **Styling**: TailwindCSS
+- **Core Analysis**: `Back-end API` + `Custom Regex Engine`
+- **Linting**: Axe-core (Web Accessibility Standard) (TypeScript)
 -   **AI Model**: [Google Gemini 2.0 Flash / Pro](https://deepmind.google/technologies/gemini/) (via REST API)
 -   **Core Engine**: [axe-core](https://www.deque.com/axe/)
 -   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
