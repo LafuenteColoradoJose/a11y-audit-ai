@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, map, firstValueFrom, forkJoin, of, catchError } from 'rxjs';
 import axe from 'axe-core';
+import { ACCESSIBILITY_RULES } from './accessibility.rules';
 
 export interface AuditIssue {
     id: string;
@@ -73,88 +74,16 @@ export class AuditService {
     }
 
     private applyRegexFix(code: string, issue: AuditIssue): string {
-        let newCode = code;
+        const rule = ACCESSIBILITY_RULES.find(r =>
+            Array.isArray(r.id) ? r.id.includes(issue.ruleId) : r.id === issue.ruleId
+        );
 
-        switch (issue.ruleId) {
-            case 'ai-ambiguous-link':
-            case 'ambiguous-link':
-                // Rule: Links should describe their purpose
-                // Fix: Replace generic text with 'View Details'
-                return newCode.replace(/>\s*(click here|read more|more|here|info)\s*</gi, '>View Details<');
-
-            case 'image-alt':
-            case 'ai-image-alt':
-                // Rule: Images must have alt text
-                // Fix: Add alt="Description" to img tags if missing
-                return newCode.replace(/<img\s+(?![^>]*\balt=)([^>]+)>/gi, '<img alt="Image description needed" $1>');
-
-            case 'button-name':
-            case 'ai-button-name':
-                // Rule: Buttons must have discernible text
-                // Fix: Add aria-label if text is empty or missing
-                return newCode.replace(/<button\s+(?![^>]*\baria-label=)([^>]*)>/gi, '<button aria-label="Action Name" $1>');
-
-            case 'label':
-            case 'label-title-only':
-            case 'ai-label':
-                // Rule: Inputs must have labels
-                // Fix: Add aria-label to input/textarea/select
-                return newCode.replace(/<(input|textarea|select)\s+(?![^>]*\b(aria-label|id|title)=)([^>]+)>/gi, '<$1 aria-label="Input field" $3>');
-
-            case 'prefer-native-button':
-            case 'ai-prefer-native-button':
-                // Rule: Use <button> instead of div/span role="button"
-                // Fix: Convert tag and add type="button"
-                return newCode.replace(/<(a|div|span)\s+([^>]*?)role=["']button["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, after, content) => {
-                    let attrs = (before + ' ' + after).replace(/href=["'][^"']*["']\s*/gi, '');
-                    attrs = attrs.replace(/\s+/g, ' ').trim();
-                    return `<button type="button" ${attrs}>${content}</button>`;
-                });
-
-            case 'ai-mouse-only-interaction':
-            case 'mouse-only-interaction':
-                // Rule: Clickable elements must be keyboard accessible
-                // Fix: Add tabindex="0" and (keydown.enter)="handler()" if (click) exists
-                // Note: We try to match the handler used in (click) to apply it to (keydown.enter)
-                return newCode.replace(/<([a-z0-9]+)\s+([^>]*)\(click\)="([^"]+)"([^>]*)>/gi, (match, tag, before, handler, after) => {
-                    // Don't modify if it's already a button or link (native interactive)
-                    if (tag === 'button' || tag === 'a' || tag === 'input') return match;
-                    // Don't add if already has keydown
-                    if (before.includes('keydown') || after.includes('keydown')) return match;
-
-                    return `<${tag} ${before} (click)="${handler}" (keydown.enter)="${handler}" tabindex="0" ${after}>`;
-                });
-
-            case 'aria-hidden-focus':
-                // Rule: aria-hidden elements should not be focusable
-                return newCode.replace(/\s?aria-hidden=["']true["']/gi, '');
-
-            case 'minimize-tabindex':
-                // Rule: Avoid positive tabindex
-                // Fix: Change positive tabindex to 0
-                return newCode.replace(/tabindex=["']([1-9][0-9]*)["']/gi, 'tabindex="0"');
-
-            case 'frame-title':
-                // Rule: Iframes must have titles
-                // Fix: Add a generic title if missing
-                return newCode.replace(/<iframe\s+(?![^>]*\btitle=)([^>]+)>/gi, '<iframe title="Embedded Content" $1>');
-
-            case 'empty-heading':
-                // Rule: Headings should not be empty
-                // Fix: Add a placeholder title
-                return newCode.replace(/<(h[1-6])>\s*<\/\1>/gi, '<$1>Heading Title</$1>');
-
-            case 'focus-obscured':
-                // Rule: Focus indicator should not be removed
-                // Fix: Replace 'outline: none' or 'outline: 0' with a visible focus ring.
-                newCode = newCode.replace(/<(div|span|p|section)\s+([^>]*?)(\(click\)|onclick)=["']([^"']*)["']([^>]*?)>(.*?)<\/\1>/gis, (match, tag, before, eventName, handler, after, content) => {
-                    let attrs = (before + ` ${eventName}="${handler}" ` + after).replace(/\s+/g, ' ').trim();
-                    return `<button type="button" ${attrs}>${content}</button>`;
-                });
-                break;
+        if (rule) {
+            return rule.apply(code);
         }
 
-        return newCode;
+        console.warn(`No regex fix rule found for: ${issue.ruleId}`);
+        return code;
     }
 
     private runCustomAudit(code: string): AuditIssue[] {
@@ -345,6 +274,37 @@ export class AuditService {
                 message: 'Justified text alignment detected. This creates "rivers of whitespace" that are hard to read for dyslexic users.',
                 suggestion: 'Use "text-align: left" (or start) for better readability.'
             });
+        }
+
+        // Rule: Redundant ARIA Role
+        // Fix: Updated regex to allow optional quotes (role=button vs role="button")
+        const redundantRoleRegex = /<(button|header|footer|main|nav|aside|article|section)[^>]*\brole=["']?(button|banner|contentinfo|main|navigation|complementary|article|region)["']?[^>]*>/gi;
+        let redundantMatch;
+        while ((redundantMatch = redundantRoleRegex.exec(code)) !== null) {
+            const tag = redundantMatch[1];
+            const role = redundantMatch[2];
+
+            // Validate explicit redundancies mappings
+            const redundancyMap: Record<string, string> = {
+                'button': 'button',
+                'header': 'banner',
+                'footer': 'contentinfo', // technically only if not inside article/section, but good warning
+                'main': 'main',
+                'nav': 'navigation',
+                'aside': 'complementary',
+                'article': 'article',
+                'section': 'region' // only if labeled, but generic warning is okay
+            };
+
+            if (redundancyMap[tag] === role) {
+                issues.push({
+                    id: `custom-redundant-role-${Date.now()}-${Math.random()}`,
+                    ruleId: 'redundant-role', // This matches the ID in accessibility.rules.ts and the Checker allowlist
+                    severity: 'low',
+                    message: `Redundant role detected: <${tag} role="${role}">. The HTML element already implies this semantic.`,
+                    suggestion: `Remove the 'role' attribute: <${tag}>.`
+                });
+            }
         }
 
         return issues;

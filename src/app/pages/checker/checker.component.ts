@@ -195,12 +195,16 @@ export class CheckerComponent {
     // Enable Auto-Fix for AI-detected issues (which start with 'ai-') 
     if (issue.ruleId.startsWith('ai-')) return true;
 
-    return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured'].includes(issue.ruleId);
+    return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured', 'aria-required-parent', 'aria-allowed-role', 'redundant-role', 'aria-hidden-body', 'nested-interactive'].includes(issue.ruleId);
   }
 
   async fixIssue(issue: AuditIssue) {
     this.isFixing.set(issue.id);
     try {
+      // UX Improvement: Artificial delay (500ms) so the user sees the spinner 
+      // and realizes "work" is being done. Instant fixes can be confusing.
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const fixedCode = await this.auditService.applyFix(this.codeSnippet(), issue);
       this.codeSnippet.set(fixedCode);
       this.analyzeCode();

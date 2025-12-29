@@ -40,6 +40,9 @@ Whether you are auditing a legacy codebase or building new components, this tool
     -   **Accessible Typography**:
         -   **Absoute Units**: Flags `px` usage for font sizes, suggesting scalable `rem`/`em` units.
         -   **Justified Text**: Detects and warns about `text-align: justify` which hurts readability for dyslexic users.
+    -   **W3C Cleanup & Structure**:
+        -   **Redundant Roles**: Automatically removes unnecessary ARIA roles (e.g., `<button role="button">` becomes `<button>`).
+        -   **Smart Des-Nesting**: Fixes invalid HTML structures like nested buttons by automatically converting the outer container to a `<div>`.
 -   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
 -   **🎨 Modern Code Editor**:
     -   Syntax highlighting for HTML/Angular.
