@@ -130,33 +130,20 @@ cd ..
 ```
 *This will train the model using `mi_dataset_wcag_gen.csv` and save it to `mi_modelo_wcag_generativo/`.*
 
-### 3. Start Full Stack
-Run the Angular Frontend + Python Backend simultaneously:
+### 1. Start Full Stack (Recommended)
+This runs both the Angular App and the Local AI Agent:
 ```bash
 npm run start:full
 ```
-*Frontend runs on `http://localhost:4200`*
-*AI Server runs on `http://localhost:8000`*
-
-### 4. 🧠 Extending the AI Model (Optional)
-You can teach the AI new tricks by editing the dataset!
-1.  Open `python-agent/mi_dataset_wcag_gen.csv`.
-2.  Add a new line with your custom example:
-    ```csv
-    "<bad-code>","<good-code>"
-    ```
-3.  Re-run the training script:
-    ```bash
-    cd python-agent
-    python train_generative.py
-    ```
-4.  Restart the full stack. The AI will now understand your new rule!
 
 ## 💡 Usage Guide
 
-1.  **Navigate to the Auditor**: Click on the "Auditor" tab in the navigation bar.
-2.  **Input Code**: Paste your HTML or Angular template code into the editor on the left.
-    *   *Tip: Hover over the top-right of the editor to see the "Limpiar" (Clear) button.*
+1.  **Navigate to the Auditor**: Click on the "Auditor" tab.
+2.  **Input Code**: Paste your HTML or Angular template.
+3.  **Analyze**: Click **Analyze Code**.
+4.  **Auto-Fix**: Click the **🪄 Auto-Fix** button on any issue. 
+    *   The app intelligently uses your **Local AI Agent** first.
+    *   If offline, it instantly applies a **Standard Fix**.
 3.  **Select Level**: Choose your target WCAG compliance level (Default is **Level AA**).
 4.  **Analyze**: Click the **Analyze Code** button.
 5.  **Review & Fix**:

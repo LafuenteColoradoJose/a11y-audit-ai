@@ -18,11 +18,13 @@ export interface AuditIssue {
 export class AuditService {
     private http = inject(HttpClient);
 
-    // Local AI Configuration
-    readonly useLocalModel = signal(false);
 
 
 
+
+    /**
+     * Analyzes the code using axe-core for real WCAG validation and custom checks.
+     */
     /**
      * Analyzes the code using axe-core for real WCAG validation and custom checks.
      */
@@ -36,24 +38,13 @@ export class AuditService {
             })
         );
 
-        // Run AI Scan (Cloud Gemini OR Local Python)
-        let aiCheck$: Observable<AuditIssue[]>;
-
-        if (this.useLocalModel()) {
-            aiCheck$ = from(this.analyzeWithLocalModel(code));
-        } else {
-            aiCheck$ = this.http.post<{ issues: AuditIssue[] }>('/api/analyze', { code }).pipe(
-                map(res => res.issues.map(i => ({
-                    ...i,
-                    ruleId: i.ruleId.startsWith('ai-') ? i.ruleId : `ai-${i.ruleId}`,
-                    id: `ai-${Date.now()}-${Math.random()}`
-                }))),
-                catchError(err => {
-                    console.warn('AI Analysis failed (offline or quota), skipping.', err);
-                    return of([] as AuditIssue[]);
-                })
-            );
-        }
+        // Run AI Scan (Local Python Agent Checks)
+        const aiCheck$ = from(this.analyzeWithLocalModel(code)).pipe(
+            catchError(err => {
+                console.warn('Local Python Analysis failed/skipped:', err);
+                return of([] as AuditIssue[]);
+            })
+        );
 
         // Merge both results
         return forkJoin([axeCheck$, aiCheck$]).pipe(
@@ -66,20 +57,12 @@ export class AuditService {
      * Returns the modified code.
      */
     async applyFix(code: string, issue: AuditIssue): Promise<string> {
-        // Option 0: Local Python Model (Custom)
-        if (this.useLocalModel()) {
-            return this.fixWithLocalModel(code, issue);
-        }
-
-        // Option 1: Try to fix via our secure Backend API (Gemini)
+        // Option 1: Try Local Python Agent First (Smarter)
         try {
-            const response = await firstValueFrom(
-                this.http.post<{ fixedCode: string }>('/api/fix', { code, issue })
-            );
-            return response.fixedCode;
+            return await this.fixWithLocalModel(code, issue);
         } catch (error) {
-            console.warn('Backend fix failed (offline or error), falling back to Regex rules.', error);
-            // Option 2: Fallback to local Regex if backend fails
+            console.warn('Local Python Agent failed (offline or error), falling back to Regex rules.', error);
+            // Option 2: Fallback to local Regex if python agent fails
             return this.applyRegexFix(code, issue);
         }
     }

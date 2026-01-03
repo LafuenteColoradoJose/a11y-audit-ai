@@ -43,23 +43,7 @@ import { toObservable } from '@angular/core/rxjs-interop';
               </select>
             </div>
 
-            <div class="flex items-center space-x-2">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Use Custom Local Model (Port 8000)</span>
-              <button 
-                  type="button"
-                  [class.bg-blue-600]="auditService.useLocalModel()"
-                  [class.bg-gray-200]="!auditService.useLocalModel()"
-                  class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  role="switch"
-                  [attr.aria-checked]="auditService.useLocalModel()"
-                  (click)="toggleLocalModel()">
-                  <span 
-                      [class.translate-x-5]="auditService.useLocalModel()"
-                      [class.translate-x-0]="!auditService.useLocalModel()"
-                      class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out">
-                  </span>
-              </button>
-            </div>
+            <!-- Model toggle removed: We now default to Local AI + Regex Fallback -->
 
 
             <div class="flex items-end">
@@ -229,7 +213,5 @@ export class CheckerComponent {
     }
   }
 
-  toggleLocalModel() {
-    this.auditService.useLocalModel.update(v => !v);
-  }
+
 }
