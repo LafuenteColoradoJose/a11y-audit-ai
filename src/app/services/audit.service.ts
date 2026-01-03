@@ -301,12 +301,38 @@ export class AuditService {
             }
         }
 
+        // Rule: Hazardous Meta Refresh
+        // We catch this here because we strip it from the Axe audit to prevent page reloads.
+        const metaRefreshRegex = /<meta[^>]*http-equiv=["']?refresh["']?[^>]*>/gi;
+        if (metaRefreshRegex.test(code)) {
+            issues.push({
+                id: `custom-meta-refresh-${Date.now()}-${Math.random()}`,
+                ruleId: 'ai-meta-refresh', // Prefix with 'ai-' to enable Auto-Fix
+                severity: 'high',
+                message: 'Delayed refresh under 20 hours must not be used (WCAG 2.2.1, 2.2.4, 3.2.5).',
+                suggestion: 'Remove the meta refresh tag. Let users control content updates.'
+            });
+        }
+
         return issues;
     }
 
     private async runAxeAudit(startHtml: string, level: string): Promise<axe.Result[]> {
+        // Sanitize hazardous tags that cause page reloads
+        let safeHtml = startHtml;
+        const metaRefreshRegex = /<meta[^>]*http-equiv=["']?refresh["']?[^>]*>/gi;
+
+        // If meta refresh exists, we remove it from the DOM injection to prevent app reload
+        // AND we must ensure a violation is recorded (handled in analyzeCode via custom checks or here?)
+        // The cleaner way is to handle it in mapAxeToAuditIssues or just let the custom audit handle it?
+        // Actually, if we remove it here, Axe won't see it.
+        // So we should rely on the caller to detect it or detect it here and merge?
+        // For simplicity, we just strip it here to protect the app.
+        // We will add a Custom Rule in 'runCustomAudit' to catch this specific case so the user isn't blind to it.
+        safeHtml = safeHtml.replace(metaRefreshRegex, '<!-- Hazardous Meta Refresh Removed for Audit -->');
+
         const container = document.createElement('div');
-        container.innerHTML = startHtml;
+        container.innerHTML = safeHtml;
         // Hide it but keep it accessible to the accessibility tree
         container.style.position = 'fixed';
         container.style.left = '-9999px';

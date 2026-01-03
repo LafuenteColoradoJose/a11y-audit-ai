@@ -51,3 +51,4 @@ python-agent/mi_modelo_wcag_generativo/*.bin
 python-agent/mi_modelo_wcag_generativo/*.h5
 python-agent/venv/
 python-agent/__pycache__/
+python-agent/resultados_wcag_gen/

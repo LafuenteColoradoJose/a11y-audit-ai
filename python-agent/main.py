@@ -72,8 +72,33 @@ async def fix_code(datos: FixRequest):
 
 @app.post("/api/analyze")
 async def analyze_code(datos: FixRequest):
-    # Este modelo es generativo (fixer), no de clasificación.
-    # Devolvemos una lista vacía para que Angular confíe en Axe-Core y Regex
-    # o podríamos implementar lógica futura aquí.
+    if not corrector:
+        return {"issues": []}
+    
+    # Use the model to see if it wants to "fix" the input
+    input_text = "fix wcag: " + datos.code
+    try:
+        results = corrector(input_text, max_length=128, num_beams=5, early_stopping=True)
+        suggested_fix = results[0]['generated_text']
+        
+        # Cleanup
+        if suggested_fix.startswith("fix wcag:"):
+            suggested_fix = suggested_fix.replace("fix wcag:", "").strip()
+            
+        # Normalize for comparison (ignore whitespace differences)
+        def normalize(s): return " ".join(s.split())
+        
+        if normalize(suggested_fix) != normalize(datos.code):
+            # The model suggests a change, so we flag it as an issue
+            return {"issues": [{
+                "id": f"ai-gen-{abs(hash(suggested_fix))}",
+                "ruleId": "ai-generative-improvement",
+                "severity": "medium",
+                "message": "AI suggests an accessibility improvement based on your training data.",
+                "suggestion": f"Suggested fix: {suggested_fix}"
+            }]}
+    except Exception as e:
+        print(f"Error in analysis: {e}")
+        
     return {"issues": []}
 
