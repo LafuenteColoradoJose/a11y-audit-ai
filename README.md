@@ -21,7 +21,8 @@ Whether you are auditing a legacy codebase or building new components, this tool
 
 ## ✨ Key Features
 
--   **🔍 Hybrid Accessibility Analysis**: Combines **axe-core** (standard rules) with **Gemini AI** (semantic understanding) to detect complex issues like foreign languages without lang tags, ambiguous link text, or confusing form structures.
+-   **🔍 Hybrid Accessibility Analysis**: Combines **axe-core** (standard rules) with **AI Agents** (semantic understanding) to detect complex issues like foreign languages without lang tags, ambiguous link text, or confusing form structures.
+-   **🛡️ Proactive AI Detection**: The local AI agent doesn't just fix code; it actively scans inputs to suggest improvements based on its training, finding issues that standard linters miss.
 -   **🤖 Serverless AI Backend**: Securely processes code using Google's Gemini models (Flash 2.0/Pro) via Vercel Edge Functions, keeping your API keys safe.
 -   **🪄 Smart Auto-Fix (Intelligent)**:
     -   **AI Mode**: Uses Generative AI to rewrite code, fixing specific issues like `tabindex`, `aria-` misuse, or missing `autocomplete` attributes.
@@ -123,12 +124,22 @@ pip install -r requirements.txt
 
 ### 2. Prepare the AI Model
 Since the AI model files are large, they are not stored in the repository. You must generate them locally (only once):
+
+#### Option A: Train Locally (Requires decent CPU/GPU)
 ```bash
 # Still inside python-agent/ directory
 python train_generative.py
 cd ..
 ```
 *This will train the model using `mi_dataset_wcag_gen.csv` and save it to `mi_modelo_wcag_generativo/`.*
+
+#### Option B: Train on Cloud (Google Colab) - Recommended 🚀
+If you want to save local resources or have a slow PC:
+1. Upload `python-agent/colab_training.ipynb` to [Google Colab](https://colab.research.google.com/).
+2. Upload `python-agent/mi_dataset_wcag_gen.csv` to the Colab file session.
+3. Run all cells in the notebook.
+4. Download the resulting `modelo_entrenado.zip`.
+5. Unzip the contents into `python-agent/mi_modelo_wcag_generativo/` (replace existing folder if any).
 
 ### 1. Start Full Stack (Recommended)
 This runs both the Angular App and the Local AI Agent:
