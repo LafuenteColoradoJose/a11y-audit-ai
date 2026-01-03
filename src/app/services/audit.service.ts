@@ -19,7 +19,7 @@ export class AuditService {
     private http = inject(HttpClient);
 
     // Local AI Configuration
-    // readonly useLocalModel = signal(false); // REMOVED: No longer used
+    readonly useLocalModel = signal(false);
 
 
 
@@ -36,18 +36,24 @@ export class AuditService {
             })
         );
 
-        // Run AI Scan (Cloud Gemini)
-        const aiCheck$ = this.http.post<{ issues: AuditIssue[] }>('/api/analyze', { code }).pipe(
-            map(res => res.issues.map(i => ({
-                ...i,
-                ruleId: i.ruleId.startsWith('ai-') ? i.ruleId : `ai-${i.ruleId}`,
-                id: `ai-${Date.now()}-${Math.random()}`
-            }))),
-            catchError(err => {
-                console.warn('AI Analysis failed (offline or quota), skipping.', err);
-                return of([] as AuditIssue[]);
-            })
-        );
+        // Run AI Scan (Cloud Gemini OR Local Python)
+        let aiCheck$: Observable<AuditIssue[]>;
+
+        if (this.useLocalModel()) {
+            aiCheck$ = from(this.analyzeWithLocalModel(code));
+        } else {
+            aiCheck$ = this.http.post<{ issues: AuditIssue[] }>('/api/analyze', { code }).pipe(
+                map(res => res.issues.map(i => ({
+                    ...i,
+                    ruleId: i.ruleId.startsWith('ai-') ? i.ruleId : `ai-${i.ruleId}`,
+                    id: `ai-${Date.now()}-${Math.random()}`
+                }))),
+                catchError(err => {
+                    console.warn('AI Analysis failed (offline or quota), skipping.', err);
+                    return of([] as AuditIssue[]);
+                })
+            );
+        }
 
         // Merge both results
         return forkJoin([axeCheck$, aiCheck$]).pipe(
@@ -60,6 +66,11 @@ export class AuditService {
      * Returns the modified code.
      */
     async applyFix(code: string, issue: AuditIssue): Promise<string> {
+        // Option 0: Local Python Model (Custom)
+        if (this.useLocalModel()) {
+            return this.fixWithLocalModel(code, issue);
+        }
+
         // Option 1: Try to fix via our secure Backend API (Gemini)
         try {
             const response = await firstValueFrom(
@@ -367,167 +378,37 @@ export class AuditService {
         }
     }
 
-    // --- Local In-Browser AI Implementation (@xenova/transformers) ---
+    // --- Local Custom Model Integration (Python Server) ---
 
-    // We keep track of the pipeline promise so we reuse it
-    private textPipeline: any = null;
-    readonly isModelLoading = signal(false);
-    readonly modelProgress = signal<string>('');
-
-    private async initLocalModel() {
-        if (this.textPipeline) return this.textPipeline;
-
-        this.isModelLoading.set(true);
-        this.modelProgress.set('Loading AI Model (approx 250MB)... this happens once.');
-
-        try {
-            // Use dynamic import from CDN to avoid build-time node-dependency issues
-            // This is a robust workaround for client-side only AI
-            // @ts-ignore
-            const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
-
-            // CRITICAL: Disable local model checking to prevent fs/path usage
-            env.allowLocalModels = false;
-            env.useBrowserCache = true;
-
-            // Using a smaller, instruction-tuned model suitable for browser
-            this.textPipeline = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-248M', {
-                progress_callback: (d: any) => {
-                    if (d.status === 'progress') {
-                        this.modelProgress.set(`Downloading: ${Math.round(d.progress)}%`);
-                    } else if (d.status === 'ready') {
-                        this.modelProgress.set('Model Ready!');
-                    }
-                }
-            });
-
-            return this.textPipeline;
-        } catch (e) {
-            console.error('Failed to load local model', e);
-            throw e;
-        } finally {
-            this.isModelLoading.set(false);
-        }
-    }
+    private localApiUrl = 'http://localhost:8000/api';
 
     private async analyzeWithLocalModel(code: string): Promise<AuditIssue[]> {
-        const generator = await this.initLocalModel();
-
-        // Simplified prompt optimized for smaller models (LaMini/Flan-T5)
-        const prompt = `
-        Identify accessibility errors in this HTML.
-        Code: ${code.substring(0, 500)} 
-        
-        If there is an error, output JSON: [{"ruleId": "error-name", "message": "Short description"}]
-        If no error, output: []
-        `;
-
+        // The Python server currently returns empty issues for analysis as it is a generative model
+        // We keep the method for future extensibility if the python model supports analysis
         try {
-            this.modelProgress.set('Analyzing code locally...');
-            const output = await generator(prompt, {
-                max_new_tokens: 150,
-                temperature: 0.1, // Low temperature for deterministic output
-                do_sample: false
-            });
-
-            const text = output[0].generated_text;
-            console.log('Local AI Output:', text);
-
-            // Try to find JSON array in the output
-            const jsonMatch = text.match(/\[.*\]/s);
-            if (jsonMatch) {
-                try {
-                    const issues = JSON.parse(jsonMatch[0]);
-                    return issues.map((i: any) => ({
-                        ...i,
-                        id: `local-browser-${Date.now()}-${Math.random()}`,
-                        suggestion: i.suggestion || 'Check WCAG guidelines.',
-                        severity: i.severity || 'medium'
-                    }));
-                } catch (e) {
-                    console.warn('JSON parse failed, falling back to text analysis');
-                }
-            }
-
-            // Fallback: Keyword detection if model refuses to speak JSON or misses the issue
-            const fallbackIssues: AuditIssue[] = [];
-            // We check the INPUT CODE, not the AI output, to guarantee detection of obvious bad patterns
-            // Ultra-robust Regex: Matches <a ...> ... Click ... Here ... </a>
-            // Allows newlines (\s+), attributes ([^>]*), and nested tags in between
-            const ambiguousLinkRegex = /<a\s+[^>]*>[\s\S]*?(click\s+here|read\s+more|more\s+info|details)[\s\S]*?<\/a>/i;
-
-            if (ambiguousLinkRegex.test(code)) {
-                fallbackIssues.push({
-                    id: `local-fallback-${Date.now()}`,
-                    ruleId: 'ai-ambiguous-link',
-                    severity: 'medium',
-                    message: 'Ambiguous link text detected (e.g., "Click here").',
-                    suggestion: 'Use descriptive link text that explains the destination.'
-                });
-            }
-
-            return fallbackIssues;
-
-        } catch (e) {
-            console.error('Local AI Inference failed', e);
+            const response = await firstValueFrom(
+                this.http.post<{ issues: any[] }>(`${this.localApiUrl}/analyze`, { code })
+            );
+            return response.issues || [];
+        } catch (error) {
+            console.warn('Local Python Server not reachable:', error);
             return [];
-        } finally {
-            this.modelProgress.set('');
         }
     }
 
     private async fixWithLocalModel(code: string, issue: AuditIssue): Promise<string> {
-        const generator = await this.initLocalModel();
-
-        // Few-shot prompt: We give examples so the model understands the task
-        const prompt = `
-        Task: Fix accessibility issues in HTML code. Return ONLY the fixed HTML.
-
-        Example 1:
-        Issue: Ambiguous link text
-        Input: <a href="#">Click here</a>
-        Output: <a href="#">View Details</a>
-
-        Example 2:
-        Issue: Images must have alternative text
-        Input: <img src="cat.jpg">
-        Output: <img src="cat.jpg" alt="A cute cat">
-
-        Current Task:
-        Issue: "${issue.message}"
-        Input: ${code}
-        Output:
-        `;
-
         try {
-            this.modelProgress.set('Generating fix locally...');
-            const output = await generator(prompt, {
-                max_new_tokens: 200,
-                temperature: 0.1
-            });
-            let fixedCode = output[0].generated_text.trim();
-
-            // 1. Cleanup prefixes
-            fixedCode = fixedCode.replace(/^Output:\s*/i, '').replace(/^Input:\s*/i, '');
-            if (fixedCode.includes('Output:')) {
-                fixedCode = fixedCode.split('Output:').pop()?.trim() || fixedCode;
-            }
-
-            // 2. Safety Check: If no HTML tags found, trigger fallback
-            if (!/<[^>]+>/.test(fixedCode)) {
-                console.warn('Local AI returned non-HTML text. Triggering Regex Fallback.', fixedCode);
-                throw new Error('Local AI output invalid'); // Throwing forces the applyFix catch block to run
-            }
-
-            // 3. Extract purely the HTML part
-            const firstTagIndex = fixedCode.search(/<[a-z][\s\S]*>/i);
-            if (firstTagIndex !== -1) {
-                fixedCode = fixedCode.substring(firstTagIndex);
-            }
-
-            return fixedCode;
-        } finally {
-            this.modelProgress.set('');
+            const response = await firstValueFrom(
+                this.http.post<{ fixedCode: string }>(`${this.localApiUrl}/fix`, {
+                    code,
+                    issue // Pass the full issue context to the server
+                })
+            );
+            return response.fixedCode || code;
+        } catch (error) {
+            console.error('Error calling Local Python Server:', error);
+            // Fallback to original code if server fails
+            return code;
         }
     }
 }

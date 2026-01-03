@@ -44,3 +44,10 @@ Thumbs.db
 src/environments/environment.development.ts
 .vercel
 .env*.local
+
+# Python Agent Model (Large Files)
+python-agent/mi_modelo_wcag_generativo/model.safetensors
+python-agent/mi_modelo_wcag_generativo/*.bin
+python-agent/mi_modelo_wcag_generativo/*.h5
+python-agent/venv/
+python-agent/__pycache__/

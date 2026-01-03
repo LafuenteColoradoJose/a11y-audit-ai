@@ -4,6 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:python": "cd python-agent && uvicorn main:app --reload --port 8000",
+    "start:full": "concurrently \"npm run start\" \"npm run start:python\"",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -49,6 +51,7 @@
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",
     "@vercel/node": "^5.5.16",
+    "concurrently": "^9.2.1",
     "jsdom": "^27.1.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.12",

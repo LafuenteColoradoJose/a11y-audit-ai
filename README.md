@@ -109,6 +109,27 @@ The Auto-Fix system is fail-safe:
 5.  **Open the Application**
     Navigate to `http://localhost:3000/` (default Vercel port) in your browser.
 
+
+## 🏃‍♂️ Running with Local AI (Integrated)
+
+This project includes a custom Python-based AI agent (`python-agent/`) that runs locally to fix accessibility issues without cloud costs.
+
+### 1. Install Python Dependencies
+One time setup:
+```bash
+cd python-agent
+pip install -r requirements.txt
+cd ..
+```
+
+### 2. Start Full Stack
+Run the Angular Frontend + Python Backend simultaneously:
+```bash
+npm run start:full
+```
+*Frontend runs on `http://localhost:4200`*
+*AI Server runs on `http://localhost:8000`*
+
 ## 💡 Usage Guide
 
 1.  **Navigate to the Auditor**: Click on the "Auditor" tab in the navigation bar.
