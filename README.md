@@ -119,10 +119,18 @@ One time setup:
 ```bash
 cd python-agent
 pip install -r requirements.txt
-cd ..
 ```
 
-### 2. Start Full Stack
+### 2. Prepare the AI Model
+Since the AI model files are large, they are not stored in the repository. You must generate them locally (only once):
+```bash
+# Still inside python-agent/ directory
+python train_generative.py
+cd ..
+```
+*This will train the model using `mi_dataset_wcag_gen.csv` and save it to `mi_modelo_wcag_generativo/`.*
+
+### 3. Start Full Stack
 Run the Angular Frontend + Python Backend simultaneously:
 ```bash
 npm run start:full
