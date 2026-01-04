@@ -62,6 +62,61 @@ def heuristic_fix_all(code: str) -> str:
                 header.insert(0, skip_link)
                 changed = True
 
+        # --- 3. Table Header Scope (th-has-data-cells) ---
+        tables = soup.find_all('table')
+        for table in tables:
+            # Case A: Layout Table / Image Grid (Only TH, no TD) -> Convert TH to TD
+            # Reference: web.dev accessibility course (User Request)
+            # "Table headers in a data table must refer to data cells"
+            # If there are no data cells, these shouldn't be headers.
+            if table.find('th') and not table.find('td'):
+                for th in table.find_all('th'):
+                    td = soup.new_tag('td')
+                    # Preserve attributes except 'scope' (invalid on td usually)
+                    for attr, value in th.attrs.items():
+                        if attr != 'scope':
+                            td[attr] = value
+                    
+                    # Move content
+                    td.extend(th.contents)
+                    th.replace_with(td)
+                changed = True
+                continue # Skip scope checks since we removed all th
+
+            # Case B: Standard Data Table (ensure scopes)
+            # Check headers in thead
+            thead = table.find('thead')
+            if thead:
+                for th in thead.find_all('th'):
+                    if not th.get('scope'):
+                        th['scope'] = 'col'
+                        changed = True
+            
+            # Check headers in tbody (row headers)
+            tbody = table.find('tbody')
+            if tbody:
+                for row in tbody.find_all('tr'):
+                    for th in row.find_all('th'):
+                         if not th.get('scope'):
+                            th['scope'] = 'row'
+                            changed = True
+
+            # If no thead/tbody, heuristic based on rows
+            if not thead and not tbody:
+                rows = table.find_all('tr')
+                if rows:
+                    # Assume first row is header cols
+                    for th in rows[0].find_all('th'):
+                        if not th.get('scope'):
+                            th['scope'] = 'col'
+                            changed = True
+                    # Assume subsequent th are row headers
+                    for row in rows[1:]:
+                        for th in row.find_all('th'):
+                            if not th.get('scope'):
+                                th['scope'] = 'row'
+                                changed = True
+
         if changed:
             # Usamos prettify para asegurar indentación limpia siempre
             return soup.prettify()

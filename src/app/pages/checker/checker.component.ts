@@ -195,7 +195,7 @@ export class CheckerComponent {
     // Enable Auto-Fix for AI-detected issues (which start with 'ai-') 
     if (issue.ruleId.startsWith('ai-')) return true;
 
-    return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured', 'aria-required-parent', 'aria-allowed-role', 'redundant-role', 'aria-hidden-body', 'nested-interactive'].includes(issue.ruleId);
+    return ['image-alt', 'button-name', 'prefer-native-button', 'label', 'label-title-only', 'aria-hidden-focus', 'minimize-tabindex', 'missing-skip-link', 'focus-obscured', 'aria-required-parent', 'aria-allowed-role', 'redundant-role', 'aria-hidden-body', 'nested-interactive', 'th-has-data-cells'].includes(issue.ruleId);
   }
 
   async fixIssue(issue: AuditIssue) {
