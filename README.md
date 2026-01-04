@@ -2,32 +2,34 @@
 
 > **An intelligent auditing tool designed to detect and automatically fix Web Accessibility (WCAG) issues in HTML and Angular applications.**
 
-![Angular Version](https://img.shields.io/badge/Angular-v21-dd0031?style=flat-square&logo=angular)
+![Angular Version](https://img.shields.io/badge/Angular-v18-dd0031?style=flat-square&logo=angular)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38b2ac?style=flat-square&logo=tailwind-css)
-![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2?style=flat-square&logo=googlebard)
+![Python](https://img.shields.io/badge/Python-FastAPI-3776AB?style=flat-square&logo=python)
+![Transformers](https://img.shields.io/badge/AI-HuggingFace-yellow?style=flat-square&logo=huggingface)
 ![Axe-Core](https://img.shields.io/badge/Axe--Core-v4.11-orange?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
-[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-000000?style=flat-square&logo=vercel)](https://a11y-audit-ai.vercel.app/)
-
-> **🚀 [Try the Live Demo Here](https://a11y-audit-ai.vercel.app/)**
 
 ---
 
 ## 📖 Overview
 
-**AI Accessibility Auditor** is a powerful, developer-focused tool that streamlines the process of creating accessible web applications. By combining the industry-standard **axe-core** engine with **Google's Gemini AI**, this application not only identifies WCAG compliance violations but intelligently **generates context-aware fixes** for you.
+**AI Accessibility Auditor** is a powerful, developer-focused tool that streamlines the process of creating accessible web applications. By combining the industry-standard **axe-core** engine with a custom **Local AI Agent**, this application not only identifies WCAG compliance violations but intelligently **generates context-aware fixes** for you.
 
-Whether you are auditing a legacy codebase or building new components, this tool ensures your markup meets **WCAG A, AA, and AAA** standards.
+Unlike other tools that rely on expensive cloud APIs, this project runs entirely **locally** using a specialized Python backend powered by fine-tuned Transformer models and robust heuristic fallback engines (BeautifulSoup).
 
 ## ✨ Key Features
 
 -   **🔍 Hybrid Accessibility Analysis**: Combines **axe-core** (standard rules) with **AI Agents** (semantic understanding) to detect complex issues like foreign languages without lang tags, ambiguous link text, or confusing form structures.
--   **🛡️ Proactive AI Detection**: The local AI agent doesn't just fix code; it actively scans inputs to suggest improvements based on its training, finding issues that standard linters miss.
--   **🤖 Serverless AI Backend**: Securely processes code using Google's Gemini models (Flash 2.0/Pro) via Vercel Edge Functions, keeping your API keys safe.
+-   **🛡️ Robust "Fix-Everything" Engine**:
+    -   **Semantic Upgrades**: Automatically converts "div soup" (`<div class="header">`) into semantic HTML (`<header>`, `<nav>`, `<main>`).
+    -   **Table Repairs**: Detects layout tables masquerading as data tables (headers without data) and fixes them instantly by converting orphaned `<th>` to `<td>`.
+    -   **Smart Navigation**: Automatically injects "Skip to main content" links and ensures the main content area has the correct ID.
+-   **� Local AI Backend**:
+    -   Run your own Generative AI model locally using Python/FastAPI.
+    -   No API keys required. No data leaves your machine.
+    -   Includes a **Heuristic Fallback System** that guarantees valid HTML fixes even when the AI model is uncertain.
 -   **🪄 Smart Auto-Fix (Intelligent)**:
-    -   **AI Mode**: Uses Generative AI to rewrite code, fixing specific issues like `tabindex`, `aria-` misuse, or missing `autocomplete` attributes.
     -   **Legacy Fallback**: Instant, offline-capable fixes for simple patterns if AI is unreachable.
-    -   **Semantic Upgrades**: Converts `<div role="form">` to `<form>`, `<a role="button">` to `<button>`, and ensures proper fieldset/legend grouping.
     -   **Form Mastery**: Enforces WCAG 1.3.5 compliance by checking and fixing missing `autocomplete` attributes on critical fields (email, tel, etc.).
     -   **Multimedia Support (WCAG 1.2)**:
         -   **Video**: Detects missing `<track>` (captions) and injects placeholders.
@@ -44,32 +46,14 @@ Whether you are auditing a legacy codebase or building new components, this tool
     -   **W3C Cleanup & Structure**:
         -   **Redundant Roles**: Automatically removes unnecessary ARIA roles (e.g., `<button role="button">` becomes `<button>`).
         -   **Smart Des-Nesting**: Fixes invalid HTML structures like nested buttons by automatically converting the outer container to a `<div>`.
--   **⚙️ Custom Rule Engine**: Includes specialized checks (e.g., `prefer-native-button`, `minimize-tabindex`) that go beyond standard validators.
--   **🎨 Modern Code Editor**:
-    -   Syntax highlighting for HTML/Angular.
-    -   "Clear Editor" functionality for quick testing.
-    -   Real-time feedback interface.
-  ### ✨ Hybrid AI Engine
-We combine the best of both worlds to ensure reliability and speed:
-1.  **Code-First Rules (Regex Engine)**: Instant, offline fixes for 80% of common issues (links, alts, labels, mouse events). Zero latency.
-2.  **Cloud AI (Gemini Pro)**: Deep semantic analysis for complex issues that require understanding context. With smart **Debounce** protection to save API quota.
 
-### 🛡️ Resilient Auto-Fix
-The Auto-Fix system is fail-safe:
-- Tries to use **Gemini AI** for a context-aware fix.
-- If AI fails (offline/quota), it falls back to the **Regex Engine**.
-- Your code *always* gets fixed, no matter what.
-
-## 🛠️ Tech Stack
+## ️ Tech Stack
 
 - **Frontend**: Angular 18 (Standalone Components, Signals, RxJS)
 - **Styling**: TailwindCSS
-- **Core Analysis**: `Back-end API` + `Custom Regex Engine`
-- **Linting**: Axe-core (Web Accessibility Standard) (TypeScript)
--   **AI Model**: [Google Gemini 2.0 Flash / Pro](https://deepmind.google/technologies/gemini/) (via REST API)
--   **Core Engine**: [axe-core](https://www.deque.com/axe/)
--   **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
--   **Editor**: [PrismJS](https://prismjs.com/)
+- **Backend (Agent)**: Python 3, FastAPI, Uvicorn
+- **AI/ML**: Transformers (HuggingFace), PyTorch, BeautifulSoup4
+- **Core Engine**: [axe-core](https://www.deque.com/axe/)
 
 ## 🚀 Getting Started
 
@@ -77,7 +61,7 @@ The Auto-Fix system is fail-safe:
 
 -   Node.js (v18 or higher)
 -   npm (v10+)
--   [Vercel CLI](https://vercel.com/docs/cli) (`npm i -g vercel`)
+-   Python 3.10+
 
 ### Installation
 
@@ -87,65 +71,45 @@ The Auto-Fix system is fail-safe:
     cd a11y-audit-ai
     ```
 
-2.  **Install dependencies**
+2.  **Install Frontend Dependencies**
     ```bash
     npm install
     ```
 
-3.  **Configure API Key (Securely)**
-    *   Get a free API Key from [Google AI Studio](https://aistudio.google.com/).
-    *   Create a file named `.env.local` in the root directory.
-    *   Add your key:
-        ```bash
-        GEMINI_API_KEY=AIzaSy...YourKeyHere...
-        ```
-    *   *Note: This file is git-ignored to keep your secrets safe.*
-
-4.  **Start the Development Server**
-    Use Vercel CLI to run both the Angular frontend and the Serverless API:
+3.  **Install Python Agent Dependencies**
     ```bash
-    vercel dev
+    cd python-agent
+    python3 -m venv venv
+    source venv/bin/activate # On Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    cd ..
     ```
 
-5.  **Open the Application**
-    Navigate to `http://localhost:3000/` (default Vercel port) in your browser.
+### 🧠 Setting up the AI Model
 
+Since the AI model files are large, they are not committed to the repo. You need to train/generate them once.
 
-## 🏃‍♂️ Running with Local AI (Integrated)
-
-This project includes a custom Python-based AI agent (`python-agent/`) that runs locally to fix accessibility issues without cloud costs.
-
-### 1. Install Python Dependencies
-One time setup:
+**Option A: Train Locally** (If you have a good CPU/GPU)
 ```bash
 cd python-agent
-pip install -r requirements.txt
-```
-
-### 2. Prepare the AI Model
-Since the AI model files are large, they are not stored in the repository. You must generate them locally (only once):
-
-#### Option A: Train Locally (Requires decent CPU/GPU)
-```bash
-# Still inside python-agent/ directory
 python train_generative.py
 cd ..
 ```
-*This will train the model using `mi_dataset_wcag_gen.csv` and save it to `mi_modelo_wcag_generativo/`.*
 
-#### Option B: Train on Cloud (Google Colab) - Recommended 🚀
-If you want to save local resources or have a slow PC:
-1. Upload `python-agent/colab_training.ipynb` to [Google Colab](https://colab.research.google.com/).
-2. Upload `python-agent/mi_dataset_wcag_gen.csv` to the Colab file session.
-3. Run all cells in the notebook.
-4. Download the resulting `modelo_entrenado.zip`.
-5. Unzip the contents into `python-agent/mi_modelo_wcag_generativo/` (replace existing folder if any).
+**Option B: Train on Cloud (Google Colab)**
+1. Upload `python-agent/colab_training.ipynb` to Google Colab.
+2. Run the training scripts.
+3. Download the zipped model and extract it to `python-agent/mi_modelo_wcag_generativo/`.
 
-### 1. Start Full Stack (Recommended)
-This runs both the Angular App and the Local AI Agent:
+### 🏃‍♂️ Running the Application
+
+To start both the Angular Frontend and the Python AI Backend simultaneously:
+
 ```bash
 npm run start:full
 ```
+
+The application will be available at `http://localhost:4200/`.
 
 ## 💡 Usage Guide
 
@@ -154,29 +118,19 @@ npm run start:full
 3.  **Analyze**: Click **Analyze Code**.
 4.  **Auto-Fix**: Click the **🪄 Auto-Fix** button on any issue. 
     *   The app intelligently uses your **Local AI Agent** first.
-    *   If offline, it instantly applies a **Standard Fix**.
-3.  **Select Level**: Choose your target WCAG compliance level (Default is **Level AA**).
-4.  **Analyze**: Click the **Analyze Code** button.
-5.  **Review & Fix**:
-    *   Issues will appear in the right-hand panel.
-    *   **Critical** issues are marked in Red, **Warnings** in Yellow.
-    *   If an issue has a **🪄 Auto-Fix** button, click it to automatically patch your code in the editor!
+    *   If the AI fix is uncertain, the **Heuristic Engine** takes over (fixing tables, semantics, skip links).
+    *   If offline, it applies a **Regex Standard Fix**.
 
 ### Example Fixes
 
 | Issue | Original Code | Auto-Fixed Code |
 | :--- | :--- | :--- |
+| **Data Table Structure** | `<table><thead>...</thead></table>` (Empty) | `<table>...<tr><td>Data Cell</td></tr></table>` (Fixed Structure) |
+| **Semantic HTML** | `<div class="header">...</div>` | `<header>...</header>` |
+| **Missing Skip Link** | `<header>...</header>` | `<header><a href="#main-content">Skip to content</a>...</header>` |
 | **Mouse-Only Interaction** | `<div (click)="save()">Save</div>` | `<button type="button" (click)="save()">Save</button>` |
-| **Absolute Font Size** | `font-size: 16px;` | `font-size: 1rem;` (Suggestion) |
 | **Missing Autocomplete** | `<input type="email">` | `<input autocomplete="email" type="email">` |
 | **Video Captions** | `<video src="..."></video>` | `<video...><track kind="captions"...></video>` |
-| **Autoplay Violation** | `<video autoplay ...>` | `<video ...>` (Autoplay removed) |
-| **Audio Transcript** | `<audio src="..."></audio>` | `<audio...></audio><details><summary>Transcript</summary>...</details>` |
-| **Non-Semantic Button** | `<a role="button">Submit</a>` | `<button type="button">Submit</button>` |
-| **Positive Tabindex** | `<div tabindex="3">...</div>` | `<div tabindex="0">...</div>` |
-| **Hidden Focus** | `style="outline: none"` | `style="outline: auto 5px..."` |
-| **Missing Alt Text** | `<img src="logo.png">` | `<img alt="Description needed" src="logo.png">` |
-| **ARIA Hidden Focus** | `<div aria-hidden="true"><button>ok</button></div>` | `<div><button>ok</button></div>` |
 
 ## 🤝 Contributing
 
